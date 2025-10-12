@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="./styles/style.css">
+    <link rel="stylesheet" href="./styles/dashboard.css">
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="sidebar-header">HIDAY PET</div>
+        <ul class="sidebar-menu">
+            <li><a href="dashboard.html" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+            <li><a href="#"><i class="fas fa-paw"></i> Quản lý Thú cưng</a></li>
+            <li><a href="#"><i class="fas fa-calendar-alt"></i> Lịch trình</a></li>
+        </ul>
+        <button id="logout-button"><i class="fas fa-sign-out-alt"></i> Logout</button>
+    </div>
+
+    <div class="main-content">
+        <h1>Dashboard</h1>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <i class="fas fa-paw"></i>
+                <div class="stat-info">
+                    <span id="stats-total-pets">...</span>
+                    <p>Tổng số thú cưng</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-calendar-check"></i>
+                <div class="stat-info">
+                    <span id="stats-upcoming-events">...</span>
+                    <p>Lịch hẹn (24h tới)</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-notes-medical"></i>
+                <div class="stat-info">
+                    <span id="stats-total-health-records">...</span>
+                    <p>Tổng số Lịch sử Y tế</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-syringe"></i>
+                <div class="stat-info">
+                    <span id="stats-due-vaccinations">...</span>
+                    <p>Lịch tiêm chủng (30 ngày tới)</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-row">
+            <div class="chart-container">
+                <h3>Thống kê theo loài</h3>
+                <canvas id="species-chart"></canvas>
+            </div>
+            <div class="recent-pets-container">
+                <h3>Thú cưng mới nhất</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tên</th>
+                            <th>Loài</th>
+                            <th>Chủ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="latest-pets-table">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="./scripts/dashboard.js"></script>
+</body>
+</html>

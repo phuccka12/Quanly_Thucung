@@ -4,6 +4,8 @@ from app.core.config import settings
 from app.models.user import User  # Chúng ta sẽ tạo file này ngay sau đây
 from app.models.pet import Pet  # Chúng ta sẽ tạo file này ngay sau đây
 from app.models.health_record import HealthRecord  # Chúng ta sẽ tạo file này ngay sau đây
+from app.models.scheduled_event import ScheduledEvent
+
 async def init_db():
     # Tạo client kết nối tới MongoDB
     client = motor.motor_asyncio.AsyncIOMotorClient(settings.MONGODB_URL)
@@ -15,7 +17,7 @@ async def init_db():
         document_models=[
             User,
             Pet,
-            HealthRecord
-            # Thêm các model khác vào đây sau này, ví dụ: Pet
+            HealthRecord,
+            ScheduledEvent,
         ]
     )

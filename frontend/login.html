@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin Login - Hiday Pet</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+  <!-- Giữ file gốc nếu bạn đã có, phần dưới có style bổ sung -->
+  <link rel="stylesheet" href="./styles/login.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="login-shell" role="dialog" aria-modal="true" aria-labelledby="title">
+      <!-- LEFT: FORM -->
+      <section class="left">
+        <div class="brand">
+          <div class="brand-badge" aria-hidden="true">HP</div>
+          <h1>HIDAY PET • Admin</h1>
+        </div>
+
+        <h2 id="title" class="title">Đăng nhập quản trị</h2>
+        <p class="subtitle">Quản lý sản phẩm, đơn hàng và người dùng trong một nơi.</p>
+
+        <form id="login-form-element">
+          <div class="input-group">
+            <label for="login-email">Email</label>
+            <div class="field">
+              <input type="email" id="login-email" placeholder="admin@hiday.pet" required autocomplete="email" />
+              <i class="fas fa-envelope" aria-hidden="true" style="position:absolute; right:42px; top:50%; transform:translateY(-50%); color:#94a3b8"></i>
+            </div>
+          </div>
+          <div class="input-group">
+            <label for="login-password">Mật khẩu</label>
+            <div class="field">
+              <input type="password" id="login-password" placeholder="••••••••" required autocomplete="current-password" />
+              <button class="toggle-pass" type="button" aria-label="Hiện/ẩn mật khẩu"><i class="far fa-eye"></i></button>
+            </div>
+          </div>
+
+          <div class="actions">
+            <label class="remember"><input type="checkbox" id="remember-me" /> Ghi nhớ đăng nhập</label>
+            <button type="submit" class="btn" id="login-btn">
+              <span class="btn-text">LOGIN</span>
+              <i class="fas fa-arrow-right" aria-hidden="true"></i>
+            </button>
+          </div>
+          <div id="login-status" class="status" aria-live="polite"></div>
+        </form>
+      </section>
+
+      <!-- RIGHT: INFO -->
+      <aside class="right" aria-hidden="false">
+        <span class="tag"><i class="fas fa-shield-alt"></i> Secure Admin</span>
+        <h3 class="headline">Bảng điều khiển gọn nhẹ, hiệu suất cao</h3>
+        <p class="blurb">HIDAY PET Admin giúp bạn theo dõi mọi thứ theo thời gian thực: sản phẩm, tồn kho, đơn hàng, khách hàng.</p>
+        <div class="mini-list">
+          <div class="mini-item"><i class="fas fa-check-circle"></i> Quyền truy cập bảo mật bằng JWT</div>
+          <div class="mini-item"><i class="fas fa-check-circle"></i> Tối ưu cho desktop & mobile</div>
+          <div class="mini-item"><i class="fas fa-check-circle"></i> Sẵn sàng tích hợp analytics</div>
+        </div>
+        <span class="bubble b1"></span>
+        <span class="bubble b2"></span>
+      </aside>
+    </div>
+  </div>
+</body>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+            const API_BASE_URL = "http://localhost:8000/api/v1";
+            const loginForm = document.getElementById('login-form-element');
+            const loginStatus = document.getElementById('login-status');
+            const emailInput = document.getElementById('login-email');
+            const passwordInput = document.getElementById('login-password');
+
+            // Nếu đã đăng nhập rồi thì chuyển thẳng về dashboard
+            if (localStorage.getItem('hiday_pet_token')) {
+                window.location.href = 'dashboard.html';
+            }
+
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                loginStatus.textContent = "Logging in...";
+                const formData = new URLSearchParams({ username: emailInput.value, password: passwordInput.value });
+                
+                try {
+                    const response = await fetch(`${API_BASE_URL}/login`, { method: 'POST', body: formData });
+                    if (!response.ok) {
+                        const err = await response.json();
+                        throw new Error(err.detail || 'Login failed!');
+                    }
+                    const data = await response.json();
+                    localStorage.setItem('hiday_pet_token', data.access_token);
+                    
+                    // Đăng nhập thành công -> Chuyển hướng sang trang dashboard
+                    window.location.href = './dashboard.html';
+
+                } catch (error) {
+                    loginStatus.textContent = error.message;
+                }
+            });
+        });
+</script>
+</html>

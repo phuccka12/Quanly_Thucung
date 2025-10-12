@@ -1,0 +1,13 @@
+:root{ --bg:#f4f6f8; --card:#fff; --accent:#2c7be5; --muted:#6c757d }
+*{box-sizing:border-box;font-family:Inter,system-ui,Arial}
+body{margin:0;background:var(--bg);color:#222}
+.admin-container{max-width:1000px;margin:40px auto;padding:20px}
+.admin-form{display:flex;flex-direction:column;gap:12px;max-width:360px}
+input{padding:10px;border:1px solid #ddd;border-radius:6px}
+button{background:var(--accent);color:#fff;padding:10px;border:none;border-radius:6px;cursor:pointer}
+.status{color:red;margin-top:8px}
+.admin-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:var(--card);box-shadow:0 1px 0 rgba(0,0,0,.05)}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:24px}
+.card{background:var(--card);padding:18px;border-radius:8px;box-shadow:0 6px 12px rgba(0,0,0,.04)}
+.card h3{margin:0;font-size:14px;color:var(--muted)}
+.card div{font-size:28px;font-weight:700;margin-top:8px}

@@ -29,7 +29,7 @@ class PetRead(PetBase):
     id: PydanticObjectId = Field(..., alias="_id")
 
     class Config:
-        from_attributes = True
+        orm_mode = True
         populate_by_name = True
 
 # Schema cho việc cập nhật thông tin Pet (các trường đều optional)

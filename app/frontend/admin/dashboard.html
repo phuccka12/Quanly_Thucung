@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hiday Pet - Admin Dashboard</title>
+  <link rel="stylesheet" href="/admin/styles.css" />
+</head>
+<body>
+  <header class="admin-header">
+    <h1>Admin Dashboard</h1>
+    <button id="logout">Logout</button>
+  </header>
+  <main class="admin-container">
+    <section class="cards">
+      <div class="card">
+        <h3>Total pets</h3>
+        <div id="total-pets">—</div>
+      </div>
+      <div class="card">
+        <h3>Upcoming events</h3>
+        <div id="upcoming-events">—</div>
+      </div>
+      <div class="card">
+        <h3>Total health records</h3>
+        <div id="total-records">—</div>
+      </div>
+      <div class="card">
+        <h3>Due vaccinations</h3>
+        <div id="due-vaccinations">—</div>
+      </div>
+    </section>
+  </main>
+  <script>
+    async function loadDashboard(){
+      const token = localStorage.getItem('hiday_admin_token');
+      if(!token){ location.href = '/admin/'; return; }
+      try{
+        const res = await fetch('/api/v1/dashboard/', {
+          headers: { Authorization: 'Bearer ' + token }
+        });
+        if(!res.ok){ throw new Error('Unauthorized'); }
+        const data = await res.json();
+        document.getElementById('total-pets').textContent = data.total_pets;
+        document.getElementById('upcoming-events').textContent = data.upcoming_events_count;
+        document.getElementById('total-records').textContent = data.total_health_records;
+        document.getElementById('due-vaccinations').textContent = data.due_vaccinations_count;
+      }catch(e){
+        console.error(e);
+        localStorage.removeItem('hiday_admin_token');
+        location.href = '/admin/';
+      }
+    }
+    document.getElementById('logout').addEventListener('click', ()=>{ localStorage.removeItem('hiday_admin_token'); location.href='/admin/'; });
+    loadDashboard();
+  </script>
+</body>
+</html>

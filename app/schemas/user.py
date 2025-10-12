@@ -1,5 +1,6 @@
 from __future__ import annotations
-
+from typing import List
+from app.models.user import User
 from typing import Optional
 import pydantic
 from pydantic import BaseModel, EmailStr, Field
