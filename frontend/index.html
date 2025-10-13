@@ -5,29 +5,44 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hiday Pet Shop - Trang chủ</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <link rel="stylesheet" href="./styles/style.css"> 
-    <link rel="stylesheet" href="./styles/login.css"> 
+    <link rel="stylesheet" href="./styles//index.css"> 
 </head>
 <body>
+
     <header>
+        <div class="top-bar">
+            <div class="contact-info">
+                <span><i class="fas fa-phone"></i> +012 345 6789</span> 
+                <span><i class="fas fa-envelope"></i> info@hidaypet.com</span>
+            </div>
+            <div class="social-icons">
+                <a href="#"><i class="fab fa-facebook-f"></i></a>
+                <a href="#"><i class="fab fa-twitter"></i></a>
+                <a href="#"><i class="fab fa-instagram"></i></a>
+            </div>
+        </div>
+
         <nav class="main-nav">
-            <div class="logo"><a href="#">HIDAY PET</a></div>
+            <div class="logo">
+                <a href="./index.html">HIDAY PET</a>
+            </div>
+            
             <ul class="menu-items">
-                <li><a href="#" class="active">Trang chủ</a></li>
-                <li><a href="#">Shop</a></li>
+                <li><a href="./index.html" class="active">Trang chủ</a></li>
+                <li><a href="./shop.html">Shop</a></li>
                 <li><a href="#">Về chúng tôi</a></li>
                 <li><a href="#">Liên hệ</a></li>
             </ul>
-           <div class="nav-icons">
-    <i class="fas fa-search"></i>
-    <i class="fas fa-shopping-cart"></i>
-    <a href="login.html" title="Admin Login">
-        <i class="fas fa-user"></i>
-    </a>
-</div>
+            
+            <div class="nav-icons">
+                <i class="fas fa-search"></i>
+                <i class="fas fa-shopping-cart"></i>
+                <a href="./login.html"><i class="fas fa-user"></i></a>
+            </div>
         </nav>
     </header>
- <main>
+
+    <main>
         <section class="hero-banner">
             <div class="hero-content">
                 <p class="subtitle">Khám phá thiên đường thú cưng</p>
@@ -68,14 +83,14 @@
             <div class="products-grid">
                 <div class="product-item">
                     <div class="product-image-placeholder">
-                        <img src="./img/prod-placeholder.png" alt="Sản phẩm 1">
+                        <img src="images/prod-placeholder.png" alt="Sản phẩm 1">
                     </div>
                     <h4>Premium Dog Food</h4>
                     <p class="price">$19.99</p>
                 </div>
                 <div class="product-item">
                     <div class="product-image-placeholder">
-                        <img src="./img/prod-placeholder.png" alt="Sản phẩm 2">
+                        <img src="images/prod-placeholder.png" alt="Sản phẩm 2">
                     </div>
                     <h4>Premium Cat Food</h4>
                     <p class="price">$17.99</p>
@@ -89,7 +104,7 @@
                 </div>
                 <div class="product-item">
                     <div class="product-image-placeholder">
-                        <img src="./img/prod-placeholder.png" alt="Sản phẩm 4">
+                        <img src="images/prod-placeholder.png" alt="Sản phẩm 4">
                     </div>
                     <h4>Catnip Toys Set</h4>
                     <p class="price">$9.99</p>
@@ -99,7 +114,7 @@
         
         <section class="mid-banner section-padding">
             <div class="mid-banner-image">
-                <img src="./img/mid-pet-illustration.png" alt="Mèo và Chó" class="mid-pet-illustration">
+                <img src="mid-pet-illustration.png" alt="Mèo và Chó" class="mid-pet-illustration">
             </div>
             <div class="mid-banner-content">
                 <p class="subtitle">Mua sắm thông minh</p>
@@ -120,30 +135,30 @@
                 </div>
                  <div class="pet-type-item">
                 <div class="pet-icon-container"> 
-                <img id="cat-profile-img" src="./img/dog.png" alt="Mèo"> 
+                <img id="cat-profile-img" src="./img/dog.png" alt="Chó"> 
                 </div>
                 <p>Chó</p>
                 </div>
                  <div class="pet-type-item">
                 <div class="pet-icon-container"> 
-                <img id="cat-profile-img" src="./img/mosue.png" alt="Mèo"> 
+                <img id="cat-profile-img" src="./img/mosue.png" alt="Chuột"> 
                 </div>
                 <p>Chuột</p>
                 </div>
                  <div class="pet-type-item">
                 <div class="pet-icon-container">
-                <img id="cat-profile-img" src="./img/chim.png" alt="Mèo">
+                <img id="cat-profile-img" src="./img/chim.png" alt="Chim"> 
                 </div>
                 <p>Chim</p>
                 </div>
                    <div class="pet-type-item">
                 <div class="pet-icon-container"> 
-                <img id="cat-profile-img" src="tho.png" alt="Mèo"> 
+                <img id="cat-profile-img" src="./img/tho.png" alt="Thỏ"> 
                 </div>
                 <p>Thỏ</p>
                 </div>
                 <div class="pet-type-item">
-                    <img src="images/pet-turtle.png" alt="Rùa">
+                    <img src="./img/pet-turtle.png" alt="Rùa">
                     <p>Rùa</p>
                 </div>
             </div>
@@ -153,7 +168,7 @@
             <h2 class="section-title">Tin tức & Blog</h2>
             <div class="blog-grid">
                 <article class="blog-post">
-                    <img src="images/blog-img-1.jpg" alt="Tên bài viết 1">
+                    <img src="./img/blog-img-1.jpg" alt="Tên bài viết 1">
                     <div class="post-content">
                         <span class="post-tag">Mẹo</span>
                         <h3>Bí quyết chăm sóc mèo con mới sinh</h3>
@@ -229,131 +244,7 @@
                 <i class="fab fa-cc-paypal"></i>
             </div>
         </div>
-
-    <footer>
-        </footer>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const API_BASE_URL = "http://localhost:8000/api/v1";
-            
-            const userIconContainer = document.getElementById('user-icon-container');
-            const loginModalOverlay = document.getElementById('login-modal-overlay');
-            const loginForm = document.getElementById('login-form-element');
-            const loginStatus = document.getElementById('login-status');
-            const emailInput = document.getElementById('login-email');
-            const passwordInput = document.getElementById('login-password');
-            const petsGridContainer = document.getElementById('pets-grid-container');
-            
-            function setupLoginButton() {
-                const userIcon = document.getElementById('user-icon');
-                if (userIcon) userIcon.addEventListener('click', () => loginModalOverlay.style.display = 'flex');
-            }
-
-            function updateUIAfterLogin() {
-                userIconContainer.innerHTML = `<i class="fas fa-sign-out-alt" id="logout-icon" style="cursor: pointer; color: var(--primary-color);"></i>`;
-                document.getElementById('logout-icon').addEventListener('click', handleLogout);
-                loginModalOverlay.style.display = 'none';
-            }
-
-            function updateUIAfterLogout() {
-                userIconContainer.innerHTML = `<i class="fas fa-user" id="user-icon" style="cursor: pointer;"></i>`;
-                setupLoginButton();
-                petsGridContainer.innerHTML = `<p style="text-align: center;">Vui lòng đăng nhập để xem danh sách thú cưng.</p>`;
-            }
-
-            async function handleLogin(e) {
-                e.preventDefault();
-                loginStatus.textContent = "Logging in...";
-                const formData = new URLSearchParams({ username: emailInput.value, password: passwordInput.value });
-                
-                try {
-                    const response = await fetch(`${API_BASE_URL}/login`, { method: 'POST', body: formData });
-                    if (!response.ok) {
-                        const err = await response.json();
-                        throw new Error(err.detail || 'Login failed!');
-                    }
-                    const data = await response.json();
-                    localStorage.setItem('hiday_pet_token', data.access_token);
-                    updateUIAfterLogin();
-                    await fetchAndDisplayPets();
-                } catch (error) {
-                    loginStatus.textContent = error.message;
-                }
-            }
-
-            function handleLogout() {
-                localStorage.removeItem('hiday_pet_token');
-                alert('Đã đăng xuất!');
-                updateUIAfterLogout();
-            }
-
-            async function fetchAndDisplayPets() {
-                const token = localStorage.getItem('hiday_pet_token');
-                if (!token) return;
-
-                petsGridContainer.innerHTML = '<p style="text-align: center;">Đang tải danh sách thú cưng...</p>';
-
-                try {
-                    const response = await fetch(`${API_BASE_URL}/pets?limit=6`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
-                    if (!response.ok) {
-                        if (response.status === 401) handleLogout();
-                        throw new Error('Không thể tải danh sách thú cưng.');
-                    }
-                    const pets = await response.json();
-                    
-                    petsGridContainer.innerHTML = '';
-                    if (pets.length === 0) {
-                        petsGridContainer.innerHTML = '<p style="text-align: center;">Chưa có thú cưng nào trong hệ thống.</p>';
-                    } else {
-                        pets.forEach(pet => {
-                            const petItem = document.createElement('div');
-                            petItem.className = 'pet-type-item';
-                            petItem.innerHTML = `
-                                <div class="pet-icon-container"> 
-                                    <img src="${pet.avatar_url || 'https://via.placeholder.com/100/FF8C00/FFFFFF?text=Pet'}" alt="${pet.name}" style="width:100%; height:100%; object-fit:cover; border-radius: 50%;"> 
-                                </div>
-                                <p>${pet.name}</p>`;
-                            petsGridContainer.appendChild(petItem);
-                        });
-                    }
-                } catch (error) {
-                    petsGridContainer.innerHTML = `<p style="color:red; text-align: center;">Lỗi: ${error.message}</p>`;
-                }
-            }
-            
-            async function checkLoginStatus() {
-                const token = localStorage.getItem('hiday_pet_token');
-                if (!token) {
-                    updateUIAfterLogout();
-                    return;
-                }
-                
-                try {
-                    const response = await fetch(`${API_BASE_URL}/users/me`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
-                    if (response.ok) {
-                        updateUIAfterLogin();
-                        await fetchAndDisplayPets();
-                    } else {
-                        handleLogout();
-                    }
-                } catch (error) {
-                    console.error("Lỗi kết nối server:", error);
-                    updateUIAfterLogout();
-                }
-            }
-
-            loginForm.addEventListener('submit', handleLogin);
-            loginModalOverlay.addEventListener('click', (e) => {
-                if (e.target === loginModalOverlay) loginModalOverlay.style.display = 'none';
-            });
-            checkLoginStatus();
-        });
-    </script>
+    </footer>
 
 </body>
 </html>
