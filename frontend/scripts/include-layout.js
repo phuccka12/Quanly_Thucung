@@ -33,8 +33,9 @@ async function include(mount, url) {
   const tb = document.querySelector('[data-include="topbar"]');
   if (tb) {
     await include(tb, './partials/topbar.html');
-    // Breadcrumb theo trang
-    const label = pageKey === 'pets' ? 'Quản lý Thú cưng' : 'Dashboard';
-    tb.querySelector('#page-label').textContent = label;
+  // Breadcrumb theo trang (check tồn tại trước khi set để tránh lỗi null)
+  const label = pageKey === 'pets' ? 'Quản lý Thú cưng' : 'Dashboard';
+  const pageLabelEl = tb.querySelector('#page-label');
+  if (pageLabelEl) pageLabelEl.textContent = label;
   }
 })();

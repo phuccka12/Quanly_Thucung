@@ -16,6 +16,14 @@ from app.schemas.health_record import HealthRecordCreate, HealthRecordRead
 from app.crud import crud_health_record
 router = APIRouter()
 
+
+@router.post('/cleanup', summary='Cleanup placeholder values in pets (admin only)')
+async def cleanup_pets_placeholders(current_admin: User = Depends(get_current_admin_user)):
+    """Admin-only utility to replace literal 'string' placeholders in pet documents."""
+    from app.crud.crud_pet import cleanup_placeholder_strings
+    result = await cleanup_placeholder_strings()
+    return result
+
 @router.post("/", response_model=PetRead, status_code=status.HTTP_201_CREATED)
 async def create_new_pet(
     *,

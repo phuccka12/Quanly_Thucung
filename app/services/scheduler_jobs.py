@@ -5,6 +5,9 @@ from datetime import datetime, timedelta, timezone
 from app.models.scheduled_event import ScheduledEvent
 from app.models.pet import Pet
 from app.core.config import settings
+from app.models.product import Product
+import smtplib
+from email.message import EmailMessage
 
 async def check_upcoming_events():
     """
@@ -66,3 +69,39 @@ async def check_upcoming_events():
         except Exception as e:
             # Lỗi này sẽ cho chúng ta biết chính xác vấn đề (sai pass, sai config...)
             print(f"!!! ERROR: Failed to send email for event '{event.title}'. Error: {e}")
+
+
+async def check_low_stock_and_notify():
+    """
+    Check products with low stock and notify admin via email.
+    """
+    print("Running low-stock check...")
+    low_threshold = settings.LOW_STOCK_THRESHOLD
+    low_products = await Product.find(Product.stock_quantity <= low_threshold).to_list()
+    if not low_products:
+        print("No low-stock products found.")
+        return
+
+    # Prepare email
+    body_lines = ["Danh sách sản phẩm sắp hết hàng:", ""]
+    for p in low_products:
+        body_lines.append(f"- {p.name}: {p.stock_quantity} remaining (price: {p.price})")
+
+    body = "\n".join(body_lines)
+
+    try:
+        msg = EmailMessage()
+        msg.set_content(body)
+        msg['Subject'] = 'Low stock alert — Pet Management'
+        msg['From'] = settings.MAIL_FROM
+        msg['To'] = settings.MAIL_TO_ADMIN
+
+        server = smtplib.SMTP(settings.MAIL_SERVER, settings.MAIL_PORT)
+        if settings.MAIL_STARTTLS:
+            server.starttls()
+        server.login(settings.MAIL_USERNAME, settings.MAIL_PASSWORD)
+        server.send_message(msg)
+        server.quit()
+        print('Low-stock email sent to admin.')
+    except Exception as e:
+        print(f'Error sending low-stock email: {e}')

@@ -4,10 +4,11 @@ from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from app.db.database import init_db
 from app.api.endpoints import users
-from app.api.endpoints import login ,pets ,health_records,scheduled_events,dashboard
-from app.services.scheduler_jobs import check_upcoming_events
+from app.api.endpoints import login ,pets ,health_records,scheduled_events,dashboard,products,services
+from app.services.scheduler_jobs import check_upcoming_events, check_low_stock_and_notify
 from apscheduler.schedulers.asyncio import AsyncIOScheduler 
 from fastapi.middleware.cors import CORSMiddleware
+from pathlib import Path
 scheduler = AsyncIOScheduler()
 # Sử dụng Lifespan API mới của FastAPI
 async def lifespan(app: FastAPI):
@@ -16,6 +17,8 @@ async def lifespan(app: FastAPI):
     
     # Thêm job vào scheduler và bắt đầu
     scheduler.add_job(check_upcoming_events, "interval", minutes=1) # Chạy job mỗi 1 phút
+    # Low-stock check once per day
+    scheduler.add_job(check_low_stock_and_notify, "interval", hours=24)
     scheduler.start()
     print("Database connection established and scheduler started.")
     
@@ -34,6 +37,10 @@ api_router_v1.include_router(pets.router, prefix="/pets", tags=["Pets"])
 api_router_v1.include_router(health_records.router, prefix="/health-records", tags=["Health Records"]) 
 api_router_v1.include_router(scheduled_events.router, prefix="/scheduled-events", tags=["Scheduled Events"])
 api_router_v1.include_router(dashboard.router, prefix="/dashboard", tags=["Dashboard"])
+api_router_v1.include_router(products.router, prefix="/products", tags=["Products"])
+api_router_v1.include_router(services.router, prefix="/services", tags=["Services"])
+from app.api.endpoints import reports
+api_router_v1.include_router(reports.router, prefix="/reports", tags=["Reports"])
 origins = [
     "http://localhost",
     "http://localhost:3000", # Địa chỉ mặc định của React
@@ -61,8 +68,12 @@ app.add_middleware(
 
 app.include_router(api_router_v1)
 
-# Mount admin static files
-app.mount("/admin", StaticFiles(directory="app/frontend/admin", html=True), name="admin")
+# Mount frontend static files (serve `frontend/` directory at site root) if present.
+# This makes static frontend available at '/' while API remains under '/api/v1'.
+BASE_DIR = Path(__file__).resolve().parent.parent
+FRONTEND_DIR = BASE_DIR / "frontend"
+if FRONTEND_DIR.exists():
+    app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")
 
 # Keep an API root under /api to avoid collision with the frontend root
 @app.get("/api/", include_in_schema=False)

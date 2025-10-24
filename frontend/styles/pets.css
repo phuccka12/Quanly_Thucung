@@ -1,0 +1,215 @@
+/* Các kiểu chung */
+:root {
+  --brand: #ff7a00; /* Màu cam chính */
+  --bg: #f5f7fb; /* Nền sáng */
+  --muted: #6b7280; /* Màu xám nhạt */
+  --white: #fff;
+  --shadow: rgba(0, 0, 0, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  font-family: 'Inter', system-ui, Arial;
+  margin: 0;
+  background-color: var(--bg);
+  color: #333;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+h1, h2, h3, h4 {
+  font-weight: bold;
+  color: #333;
+}
+
+/* Bố cục: Sidebar và Nội dung chính */
+main {
+  display: flex;
+  flex-direction: column;
+  margin-left: 250px; /* Chiều rộng sidebar */
+  padding: 20px;
+}
+
+header.page-title {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.page-title h2 {
+  font-size: 24px;
+  color: var(--brand);
+}
+
+/* Các thẻ thông tin về thú cưng */
+.card {
+  background-color: var(--white);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px var(--shadow);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.card-body {
+  padding: 20px;
+}
+
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-actions {
+  display: flex;
+}
+
+input[type="text"] {
+  padding: 8px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  margin-right: 10px;
+}
+
+button {
+  background: linear-gradient(90deg, var(--brand), #ffa62b);
+  color: var(--white);
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+button:hover {
+  background: #ff5722;
+}
+
+button.ghost {
+  background: transparent;
+  color: var(--brand);
+  border: 1px solid var(--brand);
+}
+
+button.ghost:hover {
+  background: var(--brand);
+  color: var(--white);
+}
+
+/* Các bảng dữ liệu */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+th, td {
+  text-align: left;
+  padding: 12px;
+  border-bottom: 1px solid #f1f1f1;
+}
+
+tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+/* Chi tiết thú cưng */
+#detail-root {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+#detail-root img {
+  max-width: 100%;
+  border-radius: 12px;
+}
+
+.pet-info {
+  padding: 20px;
+  background: var(--white);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px var(--shadow);
+}
+
+.pet-info h3 {
+  font-size: 22px;
+  color: var(--brand);
+}
+
+/* Modal */
+.modal {
+  display: none;
+}
+
+.modal[aria-hidden="false"] {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.modal-panel {
+  position: relative;
+  margin: 60px auto;
+  background-color: var(--white);
+  border-radius: 8px;
+  width: 480px;
+  padding: 20px;
+  box-shadow: 0 10px 30px var(--shadow);
+}
+
+.modal-head {
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-body {
+  padding-top: 20px;
+}
+
+.modal-body input {
+  width: 100%;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  margin-bottom: 12px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.modal-actions button {
+  background: var(--brand);
+  padding: 10px 20px;
+  border-radius: 6px;
+  color: var(--white);
+  border: none;
+}
+
+.modal-actions button.ghost {
+  background: transparent;
+  color: var(--brand);
+  border: 1px solid var(--brand);
+}
+
+/* Modal (Đóng và background) */
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+}

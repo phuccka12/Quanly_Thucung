@@ -66,3 +66,35 @@ async def delete_pet(pet: Pet) -> None:
     """
     await pet.delete()
     return None
+
+
+async def cleanup_placeholder_strings() -> dict:
+    """
+    Scan pets collection for fields containing the literal value 'string'
+    and replace with appropriate empty values. Returns a summary dict.
+    This is intended as an admin maintenance utility to fix bad seed data.
+    """
+    # We'll use raw motor collection operations for bulk updates
+    coll = Pet.get_motor_collection()
+    # Fields we want to clean and their replacement logic
+    fields_to_clean = [
+        ('name', ''),
+        ('species', ''),
+        ('breed', ''),
+        ('gender', None),
+        ('date_of_birth', None),
+        ('owner_name', ''),
+        ('owner_phone', None),
+        ('avatar_url', None),
+    ]
+
+    total_updated = 0
+    details = {}
+    for field, replacement in fields_to_clean:
+        query = {field: 'string'}
+        update = {'$set': {field: replacement}}
+        result = await coll.update_many(query, update)
+        details[field] = result.modified_count
+        total_updated += result.modified_count
+
+    return {'total_updated': total_updated, 'per_field': details}

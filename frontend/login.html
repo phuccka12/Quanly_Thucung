@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng Nhập Admin</title>
+    <link rel="stylesheet" href="./styles/login.css">
+</head>
+<body>
+    <div class="container">
+        <div class="login-section">
+                <div class="logo" style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:10px;">
+                     <img src="./img/9c2a1db4-dbab-4d91-997a-d96f594775e4-removebg-preview.png" alt="HIDAY PET Logo" style="height:100px;width:100px;object-fit:contain;border-radius:12px;box-shadow:0 2px 8px #ff7a0033;">
+                     <span style="font-size:larger;font-weight:800;color:#000000;letter-spacing:1px;">HIDAY PET</span>
+                </div>
+                <div class="welcome-text">
+                    LOGIN PAGE 
+                </div>
+            <p class="subtitle">Vui lòng nhập thông tin đăng nhập của bạn.</p>
+            <form id="loginForm">
+                <div class="input-group">
+                    <input type="email" class="input-field" placeholder="Email" required>
+                </div>
+                <div class="input-group">
+                    <input type="password" class="input-field" placeholder="Mật khẩu" required>
+                </div>
+
+                <div class="options">
+                    <label class="remember">
+                        <input type="checkbox">
+                        <span>Ghi nhớ trong 30 ngày</span>
+                    </label>
+                    <a href="#" class="forgot-password">Quên mật khẩu?</a>
+                </div>
+
+                <button type="submit" class="login-btn">Đăng Nhập</button>
+            </form>
+
+            <p class="signup-text">Chưa có tài khoản? <a href="#">Đăng Ký</a></p>
+        </div>
+
+        <div class="image-section">
+            <div class="illustration"></div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const email = document.querySelector('input[type="email"]').value.trim();
+            const password = document.querySelector('input[type="password"]').value;
+            let errEl = document.getElementById('loginError');
+            if (!errEl) {
+                errEl = document.createElement('div');
+                errEl.id = 'loginError';
+                errEl.className = 'form-error';
+                errEl.setAttribute('role', 'alert');
+                errEl.setAttribute('aria-live', 'polite');
+                document.querySelector('.login-section').appendChild(errEl);
+            }
+            errEl.hidden = true;
+            if (!email || !password) {
+                errEl.textContent = 'Vui lòng nhập email và mật khẩu.';
+                errEl.hidden = false;
+                return;
+            }
+            try {
+                const body = new URLSearchParams();
+                body.append('username', email);
+                body.append('password', password);
+                const res = await fetch('http://127.0.0.1:8000/api/v1/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: body.toString(),
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(()=>({ detail: 'Đăng nhập thất bại' }));
+                    throw new Error(err.detail || 'Lỗi khi đăng nhập');
+                }
+                const data = await res.json();
+                if (data && data.access_token) {
+                    localStorage.setItem('hiday_pet_token', data.access_token);
+                    window.location.href = './dashboard.html';
+                    return;
+                }
+                throw new Error('Không nhận được token từ server.');
+            } catch (err) {
+                errEl.textContent = err.message || 'Lỗi kết nối';
+                errEl.hidden = false;
+            }
+        });
+    </script>
+</body>
+</html>

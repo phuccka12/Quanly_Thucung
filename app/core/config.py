@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     MAIL_STARTTLS: bool
     MAIL_SSL_TLS: bool
     MAIL_TO_ADMIN: str
+    # Ngưỡng tồn kho thấp để gửi cảnh báo
+    LOW_STOCK_THRESHOLD: int = 5
 
     class Config:
         env_file = ".env"

@@ -1,8 +1,23 @@
+from __future__ import annotations
+
 from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import date
 from beanie import PydanticObjectId
 from app.models.health_record import RecordType
+from pydantic import BaseModel, Field
+from typing import List
+
+
+class UsedProductSchema(BaseModel):
+    product_id: PydanticObjectId
+    quantity: int = Field(..., gt=0)
+    unit_price: float = Field(..., gt=0)
+
+
+class UsedServiceSchema(BaseModel):
+    name: str
+    price: float = Field(..., gt=0)
 
 class HealthRecordBase(BaseModel):
     record_type: RecordType
@@ -13,11 +28,15 @@ class HealthRecordBase(BaseModel):
     weight_kg: Optional[float] = Field(None, gt=0)
 
 class HealthRecordCreate(HealthRecordBase):
-    pass # Dữ liệu gửi lên không cần pet_id vì nó sẽ nằm trên URL
+    # Cho phép gửi thông tin sản phẩm/dịch vụ được sử dụng trong lần khám
+    used_products: Optional[List[UsedProductSchema]] = None
+    used_services: Optional[List[UsedServiceSchema]] = None
 
 class HealthRecordRead(HealthRecordBase):
     id: PydanticObjectId = Field(..., alias="_id")
     pet_id: PydanticObjectId # Thêm pet_id để biết record này của pet nào
+    used_products: Optional[List[UsedProductSchema]] = None
+    used_services: Optional[List[UsedServiceSchema]] = None
 
     class Config:
         from_attributes = True
