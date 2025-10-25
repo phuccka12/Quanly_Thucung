@@ -13,7 +13,7 @@ async def create_event_for_pet(
     Tạo một sự kiện mới cho một thú cưng cụ thể.
     """
     event = ScheduledEvent(
-        **event_in.model_dump(),
+        **event_in.dict(),
         pet=pet
     )
     await event.insert()

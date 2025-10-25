@@ -36,7 +36,7 @@ async def create_health_record_for_pet(
 
         # Nếu đến đây, các cập nhật tồn kho thành công - tạo HealthRecord
         record = HealthRecord(
-            **record_in.model_dump(),
+            **record_in.dict(),
             pet=pet
         )
         await record.insert()
@@ -74,8 +74,9 @@ async def update_health_record(
     """
     Cập nhật thông tin một bản ghi y tế.
     """
-    update_data = record_in.model_dump(exclude_unset=True)
-    record = record.model_copy(update=update_data)
+    update_data = record_in.dict(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(record, field, value)
     await record.save()
     return record 
 

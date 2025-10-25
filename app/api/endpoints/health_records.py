@@ -30,7 +30,7 @@ async def update_health_record_by_id(
     )
 
     # Xử lý response để trả về cho khớp schema
-    response_data = updated_record.model_dump()
+    response_data = updated_record.dict()
     response_data["pet_id"] = updated_record.pet.ref.id
     return response_data
 

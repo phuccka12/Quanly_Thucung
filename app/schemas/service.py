@@ -7,6 +7,9 @@ class ServiceBase(BaseModel):
     name: str = Field(..., max_length=100)
     description: Optional[str] = None
     price: float = Field(..., gt=0)
+    duration_minutes: Optional[int] = Field(30)
+    category: Optional[str] = None
+    image_url: Optional[str] = None
 
 # Schema dùng khi tạo mới dịch vụ
 class ServiceCreate(ServiceBase):
@@ -17,6 +20,9 @@ class ServiceUpdate(BaseModel):
     name: Optional[str] = Field(None, max_length=100)
     description: Optional[str] = None
     price: Optional[float] = Field(None, gt=0)
+    duration_minutes: Optional[int] = None
+    category: Optional[str] = None
+    image_url: Optional[str] = None
 
 # Schema dùng để trả về dữ liệu cho client
 class ServiceRead(ServiceBase):

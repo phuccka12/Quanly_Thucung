@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, status, HTTPException,Response 
 from typing import List, Optional
 from app.crud import crud_pet
-from app.schemas.pet import PetCreate, PetRead , PetUpdate
+from app.schemas.pet import PetCreate, PetRead , PetUpdate, PetPaginatedResponse
 from app.crud.crud_pet import (
     create_pet,
     get_all_pets,
@@ -33,10 +33,14 @@ async def create_new_pet(
     """
     Tạo một hồ sơ thú cưng mới. (Chỉ dành cho Admin)
     """
-    return await create_pet(pet_in=pet_in)
+    pet = await create_pet(pet_in=pet_in)
+    # Return dict with string id for frontend compatibility
+    pet_dict = pet.dict()
+    pet_dict["id"] = str(pet.id)
+    return pet_dict
 
 #Hàm lấy tất cả pet
-@router.get("/", response_model=List[PetRead])
+@router.get("/")
 async def read_all_pets(
     *,
     skip: int = 0,
@@ -47,7 +51,21 @@ async def read_all_pets(
     """
     Lấy danh sách tất cả thú cưng với phân trang và tìm kiếm. (Admin only)
     """
-    return await crud_pet.get_all_pets(skip=skip, limit=limit, search=search)
+    pets, total = await crud_pet.get_all_pets_with_count(skip=skip, limit=limit, search=search)
+    
+    # Convert to dicts and set string id for frontend compatibility
+    data = []
+    for pet in pets:
+        pet_dict = pet.dict()
+        pet_dict["id"] = str(pet.id)
+        data.append(pet_dict)
+    
+    return {
+        "data": data,
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
 
 #Hàm lấy pet theo ID
 @router.get("/{pet_id}", response_model=PetRead)
@@ -67,7 +85,10 @@ async def read_pet_by_id(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Pet with id {pet_id} not found",
         )
-    return pet
+    # Return dict with string id for frontend compatibility
+    pet_dict = pet.dict()
+    pet_dict["id"] = str(pet.id)
+    return pet_dict
 
 #Hàm cập nhật pet
 @router.put("/{pet_id}", response_model=PetRead)
@@ -90,7 +111,10 @@ async def update_pet_by_id(
     
     # 2. Gọi hàm CRUD để cập nhật
     updated_pet = await update_pet(pet=existing_pet, pet_in=pet_in)
-    return updated_pet 
+    # Return dict with string id for frontend compatibility
+    pet_dict = updated_pet.dict()
+    pet_dict["id"] = str(updated_pet.id)
+    return pet_dict 
 
 #Hàm xóa pet
 @router.delete("/{pet_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -102,6 +126,8 @@ async def delete_pet_by_id(
     """
     Xóa một hồ sơ thú cưng. (Chỉ dành cho Admin)
     """
+    print(f"DELETE request for pet_id: {pet_id}, type: {type(pet_id)}")
+    
     # 1. Tìm pet trong DB
     pet_to_delete = await crud_pet.get_pet_by_id(pet_id=pet_id)
     if not pet_to_delete:
@@ -134,7 +160,7 @@ async def create_new_health_record(
     new_record = await crud_health_record.create_health_record_for_pet(pet=pet, record_in=record_in)
     
     # Cách xử lý đơn giản và đúng nhất
-    response_data = new_record.model_dump()
+    response_data = new_record.dict()
     response_data["pet_id"] = pet_id
     return response_data
 
@@ -156,7 +182,7 @@ async def read_health_records(
     # Cách xử lý đơn giản và đúng nhất
     response_list = []
     for record in records:
-        record_data = record.model_dump()
+        record_data = record.dict()
         record_data["pet_id"] = pet_id
         response_list.append(record_data)
         

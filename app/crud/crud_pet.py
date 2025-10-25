@@ -7,7 +7,7 @@ async def create_pet(pet_in: PetCreate) -> Pet:
     Tạo một hồ sơ thú cưng mới trong database.
     """
     # Tạo một đối tượng Pet model từ dữ liệu schema PetCreate
-    pet = Pet(**pet_in.model_dump())
+    pet = Pet(**pet_in.dict())
     
     # Dùng Beanie để lưu vào MongoDB
     await pet.insert()
@@ -40,6 +40,35 @@ async def get_all_pets(
     pets = await query.skip(skip).limit(limit).to_list()
     return pets
 
+async def get_all_pets_with_count(
+    skip: int = 0, 
+    limit: int = 100,
+    search: Optional[str] = None
+) -> tuple[List[Pet], int]:
+    """
+    Lấy danh sách thú cưng với tổng số lượng cho phân trang.
+    """
+    query = Pet.find_all()
+    
+    if search:
+        search_regex = {"$regex": search, "$options": "i"}
+        query = Pet.find(
+            {
+                "$or": [
+                    {"name": search_regex},
+                    {"owner_name": search_regex},
+                ]
+            }
+        )
+    
+    # Lấy tổng số
+    total = await query.count()
+    
+    # Lấy data với phân trang
+    pets = await query.skip(skip).limit(limit).to_list()
+    
+    return pets, total
+
 async def get_pet_by_id(pet_id: str) -> Optional[Pet]:
     """ 
     Lấy thông tin một thú cưng theo ID.
@@ -51,10 +80,11 @@ async def update_pet(pet: Pet, pet_in: PetUpdate) -> Pet:
     Cập nhật thông tin một thú cưng.
     """
     # Lấy dữ liệu cần update, chỉ lấy các trường được cung cấp
-    update_data = pet_in.model_dump(exclude_unset=True)
+    update_data = pet_in.dict(exclude_unset=True)
     
     # Cập nhật đối tượng pet hiện tại với dữ liệu mới
-    pet = pet.model_copy(update=update_data)
+    for field, value in update_data.items():
+        setattr(pet, field, value)
     
     # Lưu lại vào database
     await pet.save()

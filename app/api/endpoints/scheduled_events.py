@@ -28,7 +28,7 @@ async def create_event(
     
     new_event = await crud_scheduled_event.create_event_for_pet(pet=pet, event_in=event_in)
     
-    response_data = new_event.model_dump()
+    response_data = new_event.dict()
     response_data["pet_id"] = pet_id
     return response_data
 
@@ -46,7 +46,7 @@ async def get_upcoming(
     
     response_list = []
     for event in events:
-        event_data = event.model_dump()
+        event_data = event.dict()
         event_data["pet_id"] = event.pet.ref.id
         response_list.append(event_data)
         

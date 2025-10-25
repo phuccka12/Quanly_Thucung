@@ -1,23 +1,56 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Dashboard from './pages/Dashboard'
+import Pets from './pages/Pets'
+import Products from './pages/Products'
+import Services from './pages/Services'
+import Login from './pages/Login'
 import Sidebar from './components/Sidebar'
 import Topbar from './components/Topbar'
 
 export default function App(){
+  const [token, setToken] = useState(localStorage.getItem('hiday_pet_token'))
+
+  useEffect(() => {
+    const handleStorageChange = () => {
+      setToken(localStorage.getItem('hiday_pet_token'))
+    }
+    const handleTokenChange = () => {
+      setToken(localStorage.getItem('hiday_pet_token'))
+    }
+    window.addEventListener('storage', handleStorageChange)
+    window.addEventListener('tokenChanged', handleTokenChange)
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      window.removeEventListener('tokenChanged', handleTokenChange)
+    }
+  }, [])
+
   return (
-    <div className="layout">
-      <Sidebar />
-      <main className="main">
-        <Topbar />
-        <div className="content">
-          <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<Dashboard/>} />
-            {/* future routes: /pets, /products, /services, /reports ... */}
-          </Routes>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      {token ? (
+        <div className="grid grid-cols-[280px_1fr] w-full min-h-screen">
+          <Sidebar />
+          <div className="flex flex-col">
+            <Topbar />
+            <main className="flex-1 p-8 max-w-7xl mx-auto w-full">
+              <Routes>
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/dashboard" element={<Dashboard/>} />
+                <Route path="/pets" element={<Pets/>} />
+                <Route path="/products" element={<Products/>} />
+                <Route path="/services" element={<Services/>} />
+                {/* future routes: /reports ... */}
+              </Routes>
+            </main>
+          </div>
         </div>
-      </main>
+      ) : (
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      )}
     </div>
   )
 }

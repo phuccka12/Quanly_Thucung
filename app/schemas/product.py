@@ -10,6 +10,8 @@ class ProductBase(BaseModel):
 	description: Optional[str] = None
 	price: float = Field(..., gt=0)
 	stock_quantity: Optional[int] = Field(0)
+	category: Optional[str] = None
+	image_url: Optional[str] = None
 
 
 class ProductCreate(ProductBase):
@@ -21,6 +23,8 @@ class ProductUpdate(BaseModel):
 	description: Optional[str] = None
 	price: Optional[float] = Field(None, gt=0)
 	stock_quantity: Optional[int] = None
+	category: Optional[str] = None
+	image_url: Optional[str] = None
 
 
 class ProductRead(ProductBase):

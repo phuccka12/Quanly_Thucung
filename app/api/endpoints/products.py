@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from typing import List
+from typing import List, Optional
 from beanie import PydanticObjectId
 
 from app.schemas.product import ProductCreate, ProductUpdate, ProductRead
@@ -16,7 +16,11 @@ async def create_new_product(
     product_in: ProductCreate,
     current_admin: User = Depends(get_current_admin_user)
 ):
-    return await crud_product.create_product(product_in=product_in)
+    product = await crud_product.create_product(product_in=product_in)
+    # Return dict with string id for frontend compatibility
+    product_dict = product.dict()
+    product_dict["id"] = str(product.id)
+    return product_dict
 
 @router.get("", response_model=List[ProductRead])
 async def read_products(
@@ -26,6 +30,33 @@ async def read_products(
 ):
     return await crud_product.get_multi_products(skip=skip, limit=limit)
 
+@router.get("/paginated")
+async def read_products_paginated(
+    *,
+    skip: int = 0,
+    limit: int = 100,
+    search: Optional[str] = None,
+    current_admin: User = Depends(get_current_admin_user)
+):
+    """
+    Lấy danh sách sản phẩm với phân trang và tìm kiếm.
+    """
+    products, total = await crud_product.get_all_products_with_count(skip=skip, limit=limit, search=search)
+    
+    # Convert to dicts and set string id for frontend compatibility
+    data = []
+    for product in products:
+        product_dict = product.dict()
+        product_dict["id"] = str(product.id)
+        data.append(product_dict)
+    
+    return {
+        "data": data,
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
+
 @router.get("/{product_id}", response_model=ProductRead)
 async def read_product_by_id(
     product_id: PydanticObjectId,
@@ -34,7 +65,10 @@ async def read_product_by_id(
     product = await crud_product.get_product(product_id=product_id)
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
-    return product
+    # Return dict with string id for frontend compatibility
+    product_dict = product.dict()
+    product_dict["id"] = str(product.id)
+    return product_dict
 
 @router.put("/{product_id}", response_model=ProductRead)
 async def update_existing_product(
@@ -46,7 +80,11 @@ async def update_existing_product(
     product = await crud_product.get_product(product_id=product_id)
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
-    return await crud_product.update_product(product=product, product_in=product_in)
+    updated_product = await crud_product.update_product(product=product, product_in=product_in)
+    # Return dict with string id for frontend compatibility
+    product_dict = updated_product.dict()
+    product_dict["id"] = str(updated_product.id)
+    return product_dict
 
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_existing_product(

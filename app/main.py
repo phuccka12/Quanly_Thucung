@@ -1,5 +1,5 @@
 # removed stray import 'scheduler' from sched (not used)
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, UploadFile, File, HTTPException
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from app.db.database import init_db
@@ -9,6 +9,9 @@ from app.services.scheduler_jobs import check_upcoming_events, check_low_stock_a
 from apscheduler.schedulers.asyncio import AsyncIOScheduler 
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
+import shutil
+import uuid
+import os
 scheduler = AsyncIOScheduler()
 # Sử dụng Lifespan API mới của FastAPI
 async def lifespan(app: FastAPI):
@@ -30,6 +33,13 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 api_router_v1 = APIRouter(prefix="/api/v1")
+
+# Create uploads directory if it doesn't exist
+UPLOAD_DIR = Path("uploads")
+UPLOAD_DIR.mkdir(exist_ok=True)
+
+# Mount static files for uploads
+app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 # Tất cả các endpoint trong users.router sẽ có tiền tố là /users
 api_router_v1.include_router(users.router, prefix="/users", tags=["Users"])
 api_router_v1.include_router(login.router, tags=["Login"]) 
@@ -65,6 +75,26 @@ app.add_middleware(
     allow_methods=["*"],         # Cho phép tất cả các phương thức (GET, POST, etc.)
     allow_headers=["*"],         # Cho phép tất cả các header
 )
+
+# File upload endpoint
+@api_router_v1.post("/upload", tags=["Upload"])
+async def upload_file(file: UploadFile = File(...)):
+    """Upload a file and return its URL"""
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No file provided")
+    
+    # Generate unique filename
+    file_extension = Path(file.filename).suffix
+    unique_filename = f"{uuid.uuid4()}{file_extension}"
+    file_path = UPLOAD_DIR / unique_filename
+    
+    # Save file
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    
+    # Return file URL
+    file_url = f"/uploads/{unique_filename}"
+    return {"filename": unique_filename, "url": file_url}
 
 app.include_router(api_router_v1)
 
