@@ -82,14 +82,16 @@ setPetsBySpecies(d.pets_by_species || {})
 setLatestPets(d.latest_pets || [])
 }
 }catch(e){ 
+if (e.name !== 'AbortError') {
 setError('Không thể tải dữ liệu dashboard')
 console.error('dashboard load', e) 
 }
+}
 
 // widgets
-try{ const ls = await fetchWithAuth(`${API_BASE_URL}/products/low-stock`, { signal: ac.signal }); setLowStock(ls || []) } catch(e){ console.error(e) }
-try{ const ev = await fetchWithAuth(`${API_BASE_URL}/scheduled-events/upcoming`, { signal: ac.signal }); setEvents(ev || []) } catch(e){ console.error(e) }
-try{ const end = new Date(); const start = new Date(); start.setDate(end.getDate()-7); const qs = `?start_date=${start.toISOString()}&end_date=${end.toISOString()}`; const rev = await fetchWithAuth(`${API_BASE_URL}/reports/revenue${qs}`, { signal: ac.signal }); setRevenue(rev) } catch(e){ console.error(e) }
+try{ const ls = await fetchWithAuth(`${API_BASE_URL}/products/low-stock`, { signal: ac.signal }); setLowStock(ls || []) } catch(e){ if (e.name !== 'AbortError') console.error(e) }
+try{ const ev = await fetchWithAuth(`${API_BASE_URL}/scheduled-events/upcoming`, { signal: ac.signal }); setEvents(ev || []) } catch(e){ if (e.name !== 'AbortError') console.error(e) }
+try{ const end = new Date(); const start = new Date(); start.setDate(end.getDate()-7); const qs = `?start_date=${start.toISOString()}&end_date=${end.toISOString()}`; const rev = await fetchWithAuth(`${API_BASE_URL}/reports/revenue${qs}`, { signal: ac.signal }); setRevenue(rev) } catch(e){ if (e.name !== 'AbortError') console.error(e) }
 
 setLoading(false)
 }
@@ -113,14 +115,14 @@ return (
 </div>
 </div>
 
-<section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
 <StatCard icon="fas fa-paw" tone="orange" value={stats.total_pets} label="Tổng số thú cưng" loading={loading} />
 <StatCard icon="fas fa-calendar-check" tone="blue" value={stats.upcoming_events_count} label="Lịch hẹn (24h tới)" loading={loading} />
 <StatCard icon="fas fa-notes-medical" tone="green" value={stats.total_health_records} label="Tổng hồ sơ y tế" loading={loading} />
 <StatCard icon="fas fa-syringe" tone="red" value={stats.due_vaccinations_count} label="Tiêm chủng (30 ngày tới)" loading={loading} />
 </section>
 
-<section className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
 <div className="lg:col-span-2">
 <Card title="Thống kê theo loài" badge={<Badge tone="indigo">Biểu đồ</Badge>}>
 <div className="h-80 flex items-center justify-center">
@@ -195,23 +197,21 @@ return (
 </div>
 </section>
 
-<section className="mt-8">
-<Card title="Doanh thu (7 ngày)" badge={<Badge tone="green">Tổng</Badge>} className="col-span-2">
-<div className="flex items-center justify-between p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100">
-<div className="flex items-center gap-4">
-<div className="w-12 h-12 bg-gradient-to-br from-green-400 to-emerald-500 rounded-xl flex items-center justify-center text-white text-xl">
-<i className="fas fa-dollar-sign"/>
-</div>
-<div>
-<div className="text-sm text-gray-600">Tổng doanh thu 7 ngày</div>
-<div className="text-2xl font-bold text-gray-900">{revenue ? currency(revenue.total_revenue) : '0 VND'}</div>
-</div>
-</div>
-</div>
-</Card>
-</section>
-
-<footer className="mt-12 text-center text-gray-500 text-sm py-6">© {new Date().getFullYear()} HIDAY PET - Hệ thống quản lý thú cưng chuyên nghiệp</footer>
+      <section className="mt-6 sm:mt-8">
+        <Card title="Doanh thu (7 ngày)" badge={<Badge tone="green">Tổng</Badge>} className="col-span-2">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 sm:p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100 gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-green-400 to-emerald-500 rounded-xl flex items-center justify-center text-white text-lg sm:text-xl">
+                <i className="fas fa-dollar-sign"/>
+              </div>
+              <div>
+                <div className="text-sm text-gray-600">Tổng doanh thu 7 ngày</div>
+                <div className="text-xl sm:text-2xl font-bold text-gray-900">{revenue ? currency(revenue.total_revenue) : '0 VND'}</div>
+              </div>
+            </div>
+          </div>
+        </Card>
+      </section>      <footer className="mt-8 sm:mt-12 text-center text-gray-500 text-xs sm:text-sm py-4 sm:py-6">© {new Date().getFullYear()} HIDAY PET - Hệ thống quản lý thú cưng chuyên nghiệp</footer>
 </>
 )
 }

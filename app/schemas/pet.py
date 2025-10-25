@@ -28,13 +28,11 @@ class PetCreate(PetBase):
 
 # Schema cho việc trả về dữ liệu Pet
 class PetRead(PetBase):
-    id: str  # String representation for frontend
-    _id: PydanticObjectId = Field(default=None)  # MongoDB ObjectId
+    id: PydanticObjectId = Field(..., alias="_id")
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         populate_by_name = True
-        allow_population_by_field_name = True
 
 # Schema cho việc cập nhật thông tin Pet (các trường đều optional)
 class PetUpdate(BaseModel):

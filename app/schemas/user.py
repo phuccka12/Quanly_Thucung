@@ -42,7 +42,7 @@ class UserRead(BaseModel):
     else:
         # pydantic v1
         class Config:
-            allow_population_by_field_name = True
+            validate_by_name = True
 
         from pydantic import validator
 

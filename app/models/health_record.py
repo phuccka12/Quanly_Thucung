@@ -3,7 +3,7 @@ from __future__ import annotations
 from beanie import Document, Link
 from pydantic import Field, BaseModel
 from typing import Optional, List
-from datetime import date
+from datetime import datetime
 from enum import Enum
 from .pet import Pet # Import model Pet
 
@@ -29,12 +29,12 @@ class HealthRecord(Document):
     pet: Link[Pet]
     
     record_type: RecordType
-    date: date
+    date: datetime
     description: str = Field(..., max_length=200)
     notes: Optional[str] = None
     
     # Các trường tùy chọn cho từng loại record
-    next_due_date: Optional[date] = None # Dùng cho tiêm chủng
+    next_due_date: Optional[datetime] = None # Dùng cho tiêm chủng
     weight_kg: Optional[float] = Field(None, gt=0) # Dùng cho kiểm tra cân nặng
     # Nếu trong lần khám có dùng sản phẩm (thuốc, vật tư), lưu lại snapshot
     used_products: Optional[List[UsedProduct]] = None

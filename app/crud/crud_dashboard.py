@@ -42,13 +42,20 @@ async def get_dashboard_data() -> DashboardData:
     # --- TRUY VẤN MỚI 2: LẤY 5 THÚ CƯNG MỚI NHẤT ---
     latest_pets_list = await Pet.find_all().sort(-Pet.id).limit(5).to_list()
     
+    # Convert to dicts with string ids for frontend compatibility
+    latest_pets_dicts = []
+    for pet in latest_pets_list:
+        pet_dict = pet.dict()
+        pet_dict["id"] = str(pet.id)
+        latest_pets_dicts.append(pet_dict)
+    
     dashboard_data = DashboardData(
         total_pets=total_pets_count,
         upcoming_events_count=upcoming_events_count,
         total_health_records=total_health_records_count,
         due_vaccinations_count=due_vaccinations,
         pets_by_species=pets_by_species_dict,
-        latest_pets=latest_pets_list
+        latest_pets=latest_pets_dicts
     )
     
     return dashboard_data

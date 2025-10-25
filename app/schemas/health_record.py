@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 from typing import Optional
-from datetime import date
+from datetime import datetime
 from beanie import PydanticObjectId
 from app.models.health_record import RecordType
 from pydantic import BaseModel, Field
@@ -21,10 +21,10 @@ class UsedServiceSchema(BaseModel):
 
 class HealthRecordBase(BaseModel):
     record_type: RecordType
-    date: date
+    date: datetime
     description: str = Field(..., max_length=200)
     notes: Optional[str] = None
-    next_due_date: Optional[date] = None
+    next_due_date: Optional[datetime] = None
     weight_kg: Optional[float] = Field(None, gt=0)
 
 class HealthRecordCreate(HealthRecordBase):
@@ -44,8 +44,8 @@ class HealthRecordRead(HealthRecordBase):
 
 class HealthRecordUpdate(BaseModel):
     record_type: Optional[RecordType] = None
-    date: Optional[date] = None
+    date: Optional[datetime] = None
     description: Optional[str] = Field(None, max_length=200)
     notes: Optional[str] = None
-    next_due_date: Optional[date] = None
+    next_due_date: Optional[datetime] = None
     weight_kg: Optional[float] = Field(None, gt=0)

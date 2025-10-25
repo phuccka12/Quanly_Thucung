@@ -4,13 +4,26 @@ export const BASE_URL = 'http://localhost:8000'
 async function fetchJson(url, opts={}){
   const res = await fetch(url, opts)
   if (!res.ok) {
-    const text = await res.text().catch(()=>null)
+    let text
+    try {
+      text = await res.text()
+    } catch {
+      text = 'Unable to read response'
+    }
+    console.log('Response status:', res.status, 'body:', text?.substring(0, 200) + (text?.length > 200 ? '...' : ''))
     const err = new Error(res.statusText || 'HTTP error')
     err.status = res.status
     err.body = text
     throw err
   }
-  return res.json().catch(()=>null)
+  try {
+    const data = await res.json()
+    console.log('Response data:', data)
+    return data
+  } catch (e) {
+    console.error('JSON parse error:', e)
+    return null
+  }
 }
 
 export async function fetchWithAuth(pathOrUrl, opts={}){
@@ -21,5 +34,21 @@ export async function fetchWithAuth(pathOrUrl, opts={}){
   
   console.log('Request:', opts.method || 'GET', url, { headers: {...headers, Authorization: headers.Authorization ? '[PRESENT]' : '[MISSING]'} })
   
-  return fetchJson(url, Object.assign({}, opts, { headers }))
+  try {
+    const response = await fetchJson(url, Object.assign({}, opts, { headers }))
+    return response
+  } catch (err) {
+    // If 401 Unauthorized, token is invalid/expired, logout user
+    if (err.status === 401) {
+      console.log('Token invalid/expired, logging out')
+      localStorage.removeItem('hiday_pet_token')
+      localStorage.removeItem('hiday_pet_saved_email')
+      window.dispatchEvent(new Event('tokenChanged'))
+      // Redirect to login if not already there
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login'
+      }
+    }
+    throw err
+  }
 }

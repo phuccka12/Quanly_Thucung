@@ -58,7 +58,7 @@ async def get_health_records_for_pet(pet_id: PydanticObjectId) -> List[HealthRec
     Lấy danh sách tất cả các bản ghi y tế của một thú cưng.
     """
     # Tìm tất cả các record có trường 'pet._id' khớp với pet_id
-    records = await HealthRecord.find(HealthRecord.pet.id == pet_id).to_list()
+    records = await HealthRecord.find({"pet.$id": pet_id}).to_list()
     return records 
 
 async def get_health_record_by_id(record_id: PydanticObjectId) -> Optional[HealthRecord]:

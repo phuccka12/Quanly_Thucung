@@ -170,14 +170,14 @@ export default function Pets(){
   return (
     <>
       <div className="mb-8">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-4xl font-bold text-gray-800 mb-2">Quản lý thú cưng</h1>
-            <p className="text-gray-600">Quản lý hồ sơ thú cưng và thông tin chủ nuôi</p>
+            <h1 className="text-2xl sm:text-4xl font-bold text-gray-800 mb-2">Quản lý thú cưng</h1>
+            <p className="text-gray-600 text-sm sm:text-base">Quản lý hồ sơ thú cưng và thông tin chủ nuôi</p>
           </div>
           <button
             onClick={() => setShowAddModal(true)}
-            className="btn-primary flex items-center gap-2"
+            className="btn-primary flex items-center gap-2 w-full sm:w-auto justify-center"
           >
             <i className="fas fa-plus"/>
             Thêm thú cưng
@@ -208,64 +208,71 @@ export default function Pets(){
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[600px]">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thú cưng</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thông tin</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chủ nuôi</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thú cưng</th>
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Thông tin</th>
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Chủ nuôi</th>
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
                 Array.from({length: 5}).map((_, i) => (
                   <tr key={i}>
-                    <td className="px-6 py-4"><Skeleton className="h-4 w-24"/></td>
-                    <td className="px-6 py-4"><Skeleton className="h-4 w-32"/></td>
-                    <td className="px-6 py-4"><Skeleton className="h-4 w-28"/></td>
-                    <td className="px-6 py-4"><Skeleton className="h-8 w-16"/></td>
+                    <td className="px-3 sm:px-6 py-4"><Skeleton className="h-4 w-24"/></td>
+                    <td className="px-3 sm:px-6 py-4 hidden sm:table-cell"><Skeleton className="h-4 w-32"/></td>
+                    <td className="px-3 sm:px-6 py-4 hidden md:table-cell"><Skeleton className="h-4 w-28"/></td>
+                    <td className="px-3 sm:px-6 py-4"><Skeleton className="h-8 w-16"/></td>
                   </tr>
                 ))
               ) : pets.length === 0 ? (
                 <tr key="no-pets">
-                  <td colSpan="4" className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan="4" className="px-3 sm:px-6 py-12 text-center text-gray-500">
                     Chưa có thú cưng nào
                   </td>
                 </tr>
               ) : (
                 pets.map(pet => (
                   <tr key={pet.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
+                    <td className="px-3 sm:px-6 py-4">
                       <div className="flex items-center">
                         {pet.image_url ? (
                           <img
                             src={pet.image_url.startsWith('http') ? pet.image_url : `${BASE_URL}${pet.image_url}`}
                             alt={pet.name}
-                            className="w-10 h-10 rounded-full object-cover mr-3 border border-gray-200"
+                            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover mr-2 sm:mr-3 border border-gray-200"
                           />
                         ) : (
-                          <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center text-white font-semibold mr-3">
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center text-white font-semibold mr-2 sm:mr-3 text-xs sm:text-sm">
                             {pet.name?.charAt(0)?.toUpperCase()}
                           </div>
                         )}
-                        <div>
-                          <div className="font-medium text-gray-900">{pet.name}</div>
-                          <div className="text-sm text-gray-500">{pet.species}</div>
+                        <div className="min-w-0 flex-1">
+                          <div className="font-medium text-gray-900 truncate">{pet.name}</div>
+                          <div className="text-sm text-gray-500 truncate">{pet.species}</div>
+                          {/* Mobile: Show additional info */}
+                          <div className="sm:hidden text-xs text-gray-400 mt-1">
+                            {pet.breed} • {pet.age} tuổi • {pet.weight}kg
+                          </div>
+                          <div className="sm:hidden text-xs text-gray-400">
+                            {pet.owner_name} • {pet.owner_phone}
+                          </div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 sm:px-6 py-4 hidden sm:table-cell">
                       <div className="text-sm text-gray-900">{pet.breed}</div>
                       <div className="text-sm text-gray-500">{pet.age} tuổi • {pet.weight}kg</div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 sm:px-6 py-4 hidden md:table-cell">
                       <div className="text-sm text-gray-900">{pet.owner_name}</div>
                       <div className="text-sm text-gray-500">{pet.owner_email}</div>
                       <div className="text-sm text-gray-500">{pet.owner_phone}</div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
+                    <td className="px-3 sm:px-6 py-4">
+                      <div className="flex items-center gap-1 sm:gap-2">
                         <button
                           onClick={() => handleEdit(pet)}
                           className="text-indigo-600 hover:text-indigo-900 p-1"
@@ -390,7 +397,7 @@ export default function Pets(){
         title={editingPet ? "Sửa thú cưng" : "Thêm thú cưng mới"}
       >
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Tên thú cưng</label>
               <input
@@ -418,7 +425,7 @@ export default function Pets(){
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Giống</label>
               <input

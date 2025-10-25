@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { fetchWithAuth, API_BASE_URL, BASE_URL } from '../api'
-import ImageUpload from '../components/ImageUpload'
+import { fetchWithAuth, API_BASE_URL } from '../api'
 
 const Skeleton = ({className=''}) => (
   <div className={`animate-pulse rounded bg-gray-100 ${className}`} />
@@ -28,31 +27,38 @@ const Modal = ({ isOpen, onClose, title, children }) => {
   )
 }
 
-export default function Services(){
+export default function ScheduledEvents(){
   const [loading, setLoading] = useState(true)
-  const [services, setServices] = useState([])
+  const [events, setEvents] = useState([])
+  const [pets, setPets] = useState([])
   const [total, setTotal] = useState(0)
   const [error, setError] = useState(null)
   const [showAddModal, setShowAddModal] = useState(false)
-  const [editingService, setEditingService] = useState(null)
+  const [editingEvent, setEditingEvent] = useState(null)
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize] = useState(10) // Số items per page
+  const [pageSize] = useState(10)
 
   const [formData, setFormData] = useState({
-    name: '',
+    pet_id: '',
+    title: '',
+    event_datetime: '',
+    event_type: 'appointment',
     description: '',
-    price: '',
-    duration_minutes: '',
-    category: '',
-    image_url: ''
+    is_completed: false
   })
 
-  useEffect(() => {
-    loadServices()
-  }, [currentPage, search])
+  const [searchQuery, setSearchQuery] = useState('')
 
-  const loadServices = async () => {
+  useEffect(() => {
+    loadEvents()
+  }, [currentPage, searchQuery])
+
+  useEffect(() => {
+    loadPets()
+  }, [])
+
+  const loadEvents = async () => {
     setLoading(true)
     try {
       const skip = (currentPage - 1) * pageSize
@@ -60,21 +66,32 @@ export default function Services(){
         skip: skip.toString(),
         limit: pageSize.toString()
       })
-      if (search) params.append('search', search)
+      if (searchQuery.trim()) params.append('search', searchQuery.trim())
 
-      const response = await fetchWithAuth(`${API_BASE_URL}/services/paginated?${params}`)
-      console.log('loadServices response:', response)
-      console.log('services data:', response.data)
-      if (response.data && response.data.length > 0) {
-        console.log('first service:', response.data[0], 'id:', response.data[0].id, 'type:', typeof response.data[0].id)
-      }
-      setServices(response.data || [])
+      const url = `${API_BASE_URL}/scheduled-events/upcoming?${params}`
+      console.log('Loading events from:', url)
+      console.log('Search query:', searchQuery)
+      console.log('Token present:', !!localStorage.getItem('hiday_pet_token'))
+
+      const response = await fetchWithAuth(url)
+      console.log('Response status:', response.status)
+      console.log('Response data:', response)
+      setEvents(response.data || [])
       setTotal(response.total || 0)
     } catch (e) {
-      setError('Không thể tải danh sách dịch vụ')
-      console.error('load services', e)
+      console.error('Load events error:', e)
+      setError('Không thể tải danh sách lịch hẹn: ' + e.message)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadPets = async () => {
+    try {
+      const response = await fetchWithAuth(`${API_BASE_URL}/pets/?skip=0&limit=1000`)
+      setPets(response.data || [])
+    } catch (e) {
+      console.error('load pets', e)
     }
   }
 
@@ -83,85 +100,91 @@ export default function Services(){
     setError(null)
 
     try {
-      if (editingService && !editingService.id) {
-        throw new Error('Service ID is missing')
-      }
-
-      const serviceIdStr = editingService ? String(editingService.id) : null
-      const url = editingService
-        ? `${API_BASE_URL}/services/${serviceIdStr}`
-        : `${API_BASE_URL}/services`
-      const method = editingService ? 'PUT' : 'POST'
+      const url = editingEvent
+        ? `${API_BASE_URL}/scheduled-events/${editingEvent.id}`
+        : `${API_BASE_URL}/scheduled-events/for-pet/${formData.pet_id}`
+      const method = editingEvent ? 'PUT' : 'POST'
 
       const data = await fetchWithAuth(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
-          price: parseFloat(formData.price) || 0,
-          duration_minutes: parseInt(formData.duration_minutes) || 0
+          event_datetime: formData.event_datetime // Gửi trực tiếp string từ input datetime-local
         })
       })
 
-      await loadServices()
+      await loadEvents()
       setShowAddModal(false)
-      setEditingService(null)
+      setEditingEvent(null)
       resetForm()
     } catch (e) {
-      setError('Không thể lưu dịch vụ')
-      console.error('save service', e)
+      setError('Không thể lưu lịch hẹn')
+      console.error('save event', e)
     }
   }
 
-  const handleEdit = (service) => {
-    setEditingService(service)
+  const handleEdit = (event) => {
+    setEditingEvent(event)
     setFormData({
-      name: service.name || '',
-      description: service.description || '',
-      price: service.price?.toString() || '',
-      duration_minutes: service.duration_minutes?.toString() || '',
-      category: service.category || '',
-      image_url: service.image_url || ''
+      pet_id: event.pet_id || '',
+      title: event.title || '',
+      event_datetime: event.event_datetime ? new Date(event.event_datetime).toISOString().slice(0, 16) : '',
+      event_type: event.event_type || 'appointment',
+      description: event.description || '',
+      is_completed: event.is_completed || false
     })
     setShowAddModal(true)
   }
 
-  const handleDelete = async (serviceId) => {
-    const idStr = String(serviceId)
-    console.log('handleDelete called with serviceId:', serviceId, 'type:', typeof serviceId, 'stringified:', idStr)
-    if (!confirm('Bạn có chắc muốn xóa dịch vụ này?')) return
+  const handleDelete = async (eventId) => {
+    if (!confirm('Bạn có chắc muốn xóa lịch hẹn này?')) return
 
     try {
-      await fetchWithAuth(`${API_BASE_URL}/services/${idStr}`, {
+      await fetchWithAuth(`${API_BASE_URL}/scheduled-events/${eventId}`, {
         method: 'DELETE'
       })
-      await loadServices()
+      await loadEvents()
     } catch (e) {
-      setError('Không thể xóa dịch vụ')
-      console.error('delete service', e)
+      setError('Không thể xóa lịch hẹn')
+      console.error('delete event', e)
     }
   }
 
   const resetForm = () => {
     setFormData({
-      name: '',
+      pet_id: '',
+      title: '',
+      event_datetime: '',
+      event_type: 'appointment',
       description: '',
-      price: '',
-      duration_minutes: '',
-      category: '',
-      image_url: ''
+      is_completed: false
     })
   }
 
   const closeModal = () => {
     setShowAddModal(false)
-    setEditingService(null)
+    setEditingEvent(null)
     resetForm()
   }
 
-  const handleSearch = (e) => {
-    setSearch(e.target.value)
-    setCurrentPage(1) // Reset về trang 1 khi search
+  const handleSearch = () => {
+    console.log('Handle search clicked, search input:', search)
+    setSearchQuery(search)
+    setCurrentPage(1)
+    console.log('Set searchQuery to:', search)
+  }
+
+  const handleClearSearch = () => {
+    setSearch('')
+    setSearchQuery('')
+    setCurrentPage(1)
+  }
+
+  const handleSearchKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSearch()
+    }
   }
 
   const handlePageChange = (page) => {
@@ -170,20 +193,40 @@ export default function Services(){
 
   const totalPages = Math.ceil(total / pageSize)
 
+  const getEventTypeLabel = (type) => {
+    const labels = {
+      appointment: 'Lịch hẹn',
+      medication: 'Uống thuốc',
+      feeding: 'Cho ăn',
+      activity: 'Hoạt động'
+    }
+    return labels[type] || type
+  }
+
+  const getEventTypeColor = (type) => {
+    const colors = {
+      appointment: 'blue',
+      medication: 'red',
+      feeding: 'green',
+      activity: 'purple'
+    }
+    return colors[type] || 'gray'
+  }
+
   return (
     <>
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-4xl font-bold text-gray-800 mb-2">Quản lý dịch vụ</h1>
-            <p className="text-gray-600 text-sm sm:text-base">Quản lý dịch vụ và thông tin chăm sóc</p>
+            <h1 className="text-2xl sm:text-4xl font-bold text-gray-800 mb-2">Quản lý lịch hẹn</h1>
+            <p className="text-gray-600 text-sm sm:text-base">Quản lý lịch hẹn và sự kiện cho thú cưng</p>
           </div>
           <button
             onClick={() => setShowAddModal(true)}
             className="btn-primary flex items-center gap-2 w-full sm:w-auto justify-center"
           >
             <i className="fas fa-plus"/>
-            Thêm dịch vụ
+            Thêm lịch hẹn
           </button>
         </div>
       </div>
@@ -197,15 +240,41 @@ export default function Services(){
       <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-800">Danh sách dịch vụ</h2>
+            <h2 className="text-xl font-semibold text-gray-800">Danh sách lịch hẹn</h2>
             <div className="flex items-center gap-2">
               <input
                 type="text"
-                placeholder="Tìm kiếm theo tên dịch vụ..."
+                placeholder="Tìm kiếm theo tên sự kiện..."
                 value={search}
-                onChange={handleSearch}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyPress={handleSearchKeyPress}
                 className="px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
+              <button
+                onClick={handleSearch}
+                disabled={loading}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <i className="fas fa-spinner fa-spin"/>
+                    <span>Đang tìm...</span>
+                  </>
+                ) : (
+                  <>
+                    <i className="fas fa-search"/>
+                    <span>Tìm kiếm</span>
+                  </>
+                )}
+              </button>
+              {search && (
+                <button
+                  onClick={handleClearSearch}
+                  className="px-4 py-2 bg-gray-500 text-white rounded-xl hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                >
+                  <i className="fas fa-times"/>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -214,10 +283,10 @@ export default function Services(){
           <table className="w-full min-w-[600px]">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dịch vụ</th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Danh mục</th>
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sự kiện</th>
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Thú cưng</th>
                 <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Thời gian</th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">Giá</th>
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">Trạng thái</th>
                 <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
               </tr>
             </thead>
@@ -225,73 +294,63 @@ export default function Services(){
               {loading ? (
                 Array.from({length: 5}).map((_, i) => (
                   <tr key={i}>
-                    <td className="px-6 py-4"><Skeleton className="h-4 w-24"/></td>
-                    <td className="px-6 py-4"><Skeleton className="h-4 w-32"/></td>
-                    <td className="px-6 py-4"><Skeleton className="h-4 w-28"/></td>
-                    <td className="px-6 py-4"><Skeleton className="h-8 w-16"/></td>
-                    <td className="px-6 py-4"><Skeleton className="h-8 w-16"/></td>
+                    <td className="px-3 sm:px-6 py-4"><Skeleton className="h-4 w-24"/></td>
+                    <td className="px-3 sm:px-6 py-4 hidden sm:table-cell"><Skeleton className="h-4 w-32"/></td>
+                    <td className="px-3 sm:px-6 py-4 hidden md:table-cell"><Skeleton className="h-4 w-28"/></td>
+                    <td className="px-3 sm:px-6 py-4 hidden lg:table-cell"><Skeleton className="h-8 w-16"/></td>
+                    <td className="px-3 sm:px-6 py-4"><Skeleton className="h-8 w-16"/></td>
                   </tr>
                 ))
-              ) : services.length === 0 ? (
-                <tr key="no-services">
-                  <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
-                    Chưa có dịch vụ nào
+              ) : events.length === 0 ? (
+                <tr key="no-events">
+                  <td colSpan="5" className="px-3 sm:px-6 py-12 text-center text-gray-500">
+                    {searchQuery ? `Không tìm thấy lịch hẹn nào với từ khóa "${searchQuery}"` : 'Chưa có lịch hẹn nào'}
                   </td>
                 </tr>
               ) : (
-                services.map(service => (
-                  <tr key={String(service.id)} className="hover:bg-gray-50">
+                events.map(event => (
+                  <tr key={event.id} className="hover:bg-gray-50">
                     <td className="px-3 sm:px-6 py-4">
                       <div className="flex items-center">
-                        {service.image_url ? (
-                          <img
-                            src={service.image_url.startsWith('http') ? service.image_url : `${BASE_URL}${service.image_url}`}
-                            alt={service.name}
-                            className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg object-cover mr-2 sm:mr-3 border border-gray-200"
-                          />
-                        ) : (
-                          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-orange-400 to-red-500 rounded-lg flex items-center justify-center text-white font-semibold mr-2 sm:mr-3">
-                            <i className="fas fa-concierge-bell"/>
-                          </div>
-                        )}
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-lg flex items-center justify-center text-white font-semibold mr-2 sm:mr-3">
+                          <i className="fas fa-calendar text-xs sm:text-sm"/>
+                        </div>
                         <div className="min-w-0 flex-1">
-                          <div className="font-medium text-gray-900 truncate">{service.name}</div>
-                          <div className="text-sm text-gray-500 truncate">{service.description}</div>
-                          {/* Mobile: Show additional info */}
+                          <div className="font-medium text-gray-900 truncate">{event.title}</div>
+                          <div className="text-sm text-gray-500 truncate">{event.description}</div>
                           <div className="sm:hidden text-xs text-gray-400 mt-1">
-                            <Badge tone="blue" className="mr-2">{service.category}</Badge>
-                            {service.duration_minutes} phút
-                          </div>
-                          <div className="sm:hidden text-xs text-gray-400">
-                            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(service.price)}
+                            <Badge tone={getEventTypeColor(event.event_type)} className="mr-2">
+                              {getEventTypeLabel(event.event_type)}
+                            </Badge>
+                            {new Date(event.event_datetime).toLocaleString('vi-VN')}
                           </div>
                         </div>
                       </div>
                     </td>
                     <td className="px-3 sm:px-6 py-4 hidden sm:table-cell">
-                      <Badge tone="blue">{service.category}</Badge>
+                      <div className="text-sm text-gray-900">{event.pet_name || 'N/A'}</div>
                     </td>
                     <td className="px-3 sm:px-6 py-4 hidden md:table-cell">
                       <div className="text-sm text-gray-900">
-                        {service.duration_minutes} phút
+                        {new Date(event.event_datetime).toLocaleString('vi-VN')}
                       </div>
                     </td>
                     <td className="px-3 sm:px-6 py-4 hidden lg:table-cell">
-                      <div className="text-sm font-medium text-gray-900">
-                        {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(service.price)}
-                      </div>
+                      <Badge tone={event.is_completed ? 'green' : 'yellow'}>
+                        {event.is_completed ? 'Hoàn thành' : 'Chưa hoàn thành'}
+                      </Badge>
                     </td>
                     <td className="px-3 sm:px-6 py-4">
                       <div className="flex items-center gap-1 sm:gap-2">
                         <button
-                          onClick={() => handleEdit(service)}
+                          onClick={() => handleEdit(event)}
                           className="text-indigo-600 hover:text-indigo-900 p-1"
                           title="Sửa"
                         >
                           <i className="fas fa-edit"/>
                         </button>
                         <button
-                          onClick={() => handleDelete(service.id)}
+                          onClick={() => handleDelete(event.id)}
                           className="text-red-600 hover:text-red-900 p-1"
                           title="Xóa"
                         >
@@ -311,7 +370,7 @@ export default function Services(){
       {totalPages > 1 && (
         <div className="bg-white px-6 py-4 border-t border-gray-200 flex items-center justify-between">
           <div className="text-sm text-gray-700">
-            Hiển thị {((currentPage - 1) * pageSize) + 1} đến {Math.min(currentPage * pageSize, total)} của {total} dịch vụ
+            Hiển thị {((currentPage - 1) * pageSize) + 1} đến {Math.min(currentPage * pageSize, total)} của {total} lịch hẹn
           </div>
           <div className="flex items-center gap-1">
             <button
@@ -322,19 +381,16 @@ export default function Services(){
               <i className="fas fa-chevron-left"/>
             </button>
 
-            {/* Page numbers with smart display */}
             {(() => {
               const pages = []
               const showPages = 5
               let startPage = Math.max(1, currentPage - Math.floor(showPages / 2))
               let endPage = Math.min(totalPages, startPage + showPages - 1)
 
-              // Adjust start if we're near the end
               if (endPage - startPage + 1 < showPages) {
                 startPage = Math.max(1, endPage - showPages + 1)
               }
 
-              // Add first page and ellipsis if needed
               if (startPage > 1) {
                 pages.push(
                   <button
@@ -352,7 +408,6 @@ export default function Services(){
                 }
               }
 
-              // Add page numbers
               for (let i = startPage; i <= endPage; i++) {
                 pages.push(
                   <button
@@ -369,7 +424,6 @@ export default function Services(){
                 )
               }
 
-              // Add last page and ellipsis if needed
               if (endPage < totalPages) {
                 if (endPage < totalPages - 1) {
                   pages.push(
@@ -404,18 +458,62 @@ export default function Services(){
       <Modal
         isOpen={showAddModal}
         onClose={closeModal}
-        title={editingService ? "Sửa dịch vụ" : "Thêm dịch vụ mới"}
+        title={editingEvent ? "Sửa lịch hẹn" : "Thêm lịch hẹn mới"}
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tên dịch vụ</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Chọn thú cưng</label>
+            <select
+              value={formData.pet_id}
+              onChange={(e) => setFormData({...formData, pet_id: e.target.value})}
+              className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              required
+            >
+              <option value="">Chọn thú cưng</option>
+              {pets.map(pet => (
+                <option key={pet.id} value={pet.id}>
+                  {pet.name} - {pet.species} ({pet.owner_name})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Tiêu đề sự kiện</label>
             <input
               type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({...formData, name: e.target.value})}
+              value={formData.title}
+              onChange={(e) => setFormData({...formData, title: e.target.value})}
               className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
               required
             />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Thời gian</label>
+              <input
+                type="datetime-local"
+                value={formData.event_datetime}
+                onChange={(e) => setFormData({...formData, event_datetime: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Loại sự kiện</label>
+              <select
+                value={formData.event_type}
+                onChange={(e) => setFormData({...formData, event_type: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                required
+              >
+                <option value="appointment">Lịch hẹn</option>
+                <option value="medication">Uống thuốc</option>
+                <option value="feeding">Cho ăn</option>
+                <option value="activity">Hoạt động</option>
+              </select>
+            </div>
           </div>
 
           <div>
@@ -428,53 +526,18 @@ export default function Services(){
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Thời gian (phút)</label>
-              <input
-                type="number"
-                value={formData.duration_minutes}
-                onChange={(e) => setFormData({...formData, duration_minutes: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                min="0"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Giá (VND)</label>
-              <input
-                type="number"
-                value={formData.price}
-                onChange={(e) => setFormData({...formData, price: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                min="0"
-                step="1000"
-                required
-              />
-            </div>
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="is_completed"
+              checked={formData.is_completed}
+              onChange={(e) => setFormData({...formData, is_completed: e.target.checked})}
+              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+            />
+            <label htmlFor="is_completed" className="ml-2 block text-sm text-gray-900">
+              Đã hoàn thành
+            </label>
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Danh mục</label>
-            <select
-              value={formData.category}
-              onChange={(e) => setFormData({...formData, category: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              required
-            >
-              <option value="">Chọn danh mục</option>
-              <option value="Chăm sóc">Chăm sóc</option>
-              <option value="Spa">Spa</option>
-              <option value="Khám chữa bệnh">Khám chữa bệnh</option>
-              <option value="Tiêm phòng">Tiêm phòng</option>
-              <option value="Khác">Khác</option>
-            </select>
-          </div>
-
-          <ImageUpload
-            value={formData.image_url}
-            onChange={(url) => setFormData({...formData, image_url: url})}
-          />
 
           <div className="flex gap-3 pt-4">
             <button
@@ -488,7 +551,7 @@ export default function Services(){
               type="submit"
               className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700"
             >
-              {editingService ? 'Cập nhật' : 'Thêm mới'}
+              {editingEvent ? 'Cập nhật' : 'Thêm mới'}
             </button>
           </div>
         </form>

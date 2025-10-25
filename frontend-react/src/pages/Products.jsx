@@ -173,14 +173,14 @@ export default function Products(){
   return (
     <>
       <div className="mb-8">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-4xl font-bold text-gray-800 mb-2">Quản lý sản phẩm</h1>
-            <p className="text-gray-600">Quản lý kho hàng và thông tin sản phẩm</p>
+            <h1 className="text-2xl sm:text-4xl font-bold text-gray-800 mb-2">Quản lý sản phẩm</h1>
+            <p className="text-gray-600 text-sm sm:text-base">Quản lý kho hàng và thông tin sản phẩm</p>
           </div>
           <button
             onClick={() => setShowAddModal(true)}
-            className="btn-primary flex items-center gap-2"
+            className="btn-primary flex items-center gap-2 w-full sm:w-auto justify-center"
           >
             <i className="fas fa-plus"/>
             Thêm sản phẩm
@@ -211,14 +211,14 @@ export default function Products(){
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[600px]">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sản phẩm</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Danh mục</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Giá</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tồn kho</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sản phẩm</th>
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Danh mục</th>
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Giá</th>
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">Tồn kho</th>
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -241,34 +241,43 @@ export default function Products(){
               ) : (
                 products.map(product => (
                   <tr key={String(product.id)} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
+                    <td className="px-3 sm:px-6 py-4">
                       <div className="flex items-center">
                         {product.image_url ? (
                           <img
                             src={product.image_url.startsWith('http') ? product.image_url : `${BASE_URL}${product.image_url}`}
                             alt={product.name}
-                            className="w-12 h-12 rounded-lg object-cover mr-3 border border-gray-200"
+                            className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg object-cover mr-2 sm:mr-3 border border-gray-200"
                           />
                         ) : (
-                          <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-blue-500 rounded-lg flex items-center justify-center text-white font-semibold mr-3">
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-green-400 to-blue-500 rounded-lg flex items-center justify-center text-white font-semibold mr-2 sm:mr-3">
                             <i className="fas fa-box"/>
                           </div>
                         )}
-                        <div>
-                          <div className="font-medium text-gray-900">{product.name}</div>
-                          <div className="text-sm text-gray-500">{product.description}</div>
+                        <div className="min-w-0 flex-1">
+                          <div className="font-medium text-gray-900 truncate">{product.name}</div>
+                          <div className="text-sm text-gray-500 truncate">{product.description}</div>
+                          {/* Mobile: Show additional info */}
+                          <div className="sm:hidden text-xs text-gray-400 mt-1">
+                            <Badge tone="blue" className="mr-2">{product.category}</Badge>
+                            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(product.price)}
+                          </div>
+                          <div className="sm:hidden text-xs text-gray-400">
+                            Tồn kho: {product.stock_quantity}
+                            {product.stock_quantity <= 10 && <span className="ml-1 text-red-600">⚠️ Thấp</span>}
+                          </div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 sm:px-6 py-4 hidden sm:table-cell">
                       <Badge tone="blue">{product.category}</Badge>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 sm:px-6 py-4 hidden md:table-cell">
                       <div className="text-sm font-medium text-gray-900">
                         {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(product.price)}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 sm:px-6 py-4 hidden lg:table-cell">
                       <div className="text-sm text-gray-900">
                         {product.stock_quantity}
                         {product.stock_quantity <= 10 && (
@@ -276,8 +285,8 @@ export default function Products(){
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
+                    <td className="px-3 sm:px-6 py-4">
+                      <div className="flex items-center gap-1 sm:gap-2">
                         <button
                           onClick={() => handleEdit(product)}
                           className="text-indigo-600 hover:text-indigo-900 p-1"

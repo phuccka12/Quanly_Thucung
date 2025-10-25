@@ -39,7 +39,19 @@ export default function Sidebar(){
             </NavLink>
           </li>
           <li>
-            <NavLink to="/reports" className="flex items-center p-4 rounded-xl text-gray-600 hover:bg-white hover:shadow-md hover:text-indigo-600 transition-all duration-200">
+            <NavLink to="/scheduled-events" className={({isActive})=> `flex items-center p-4 rounded-xl transition-all duration-200 ${isActive ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg' : 'text-gray-600 hover:bg-white hover:shadow-md hover:text-indigo-600'}`}>
+              <i className="fas fa-calendar-alt mr-3 text-lg"/>
+              Lịch hẹn
+            </NavLink>
+          </li>
+          <li>
+            <NavLink to="/health-records" className={({isActive})=> `flex items-center p-4 rounded-xl transition-all duration-200 ${isActive ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg' : 'text-gray-600 hover:bg-white hover:shadow-md hover:text-indigo-600'}`}>
+              <i className="fas fa-notes-medical mr-3 text-lg"/>
+              Hồ sơ y tế
+            </NavLink>
+          </li>
+          <li>
+            <NavLink to="/reports" className={({isActive})=> `flex items-center p-4 rounded-xl transition-all duration-200 ${isActive ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg' : 'text-gray-600 hover:bg-white hover:shadow-md hover:text-indigo-600'}`}>
               <i className="fas fa-chart-line mr-3 text-lg"/>
               Báo cáo
             </NavLink>

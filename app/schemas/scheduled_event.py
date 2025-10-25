@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, validator
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 from beanie import PydanticObjectId
 from app.models.scheduled_event import EventType
@@ -14,8 +14,16 @@ class ScheduledEventBase(BaseModel):
 
     # --- THÊM BỘ VALIDATOR VÀO ĐÂY ---
     @validator('event_datetime', pre=True, always=True)
-    def convert_to_utc(cls, v: datetime) -> datetime:
+    def convert_to_utc(cls, v) -> datetime:
         """Tự động chuyển đổi datetime sang UTC nếu nó không có múi giờ."""
+        # Nếu v là string, parse thành datetime
+        if isinstance(v, str):
+            try:
+                v = datetime.fromisoformat(v.replace('Z', '+00:00'))
+            except ValueError:
+                # Thử parse định dạng khác nếu cần
+                v = datetime.strptime(v, '%Y-%m-%dT%H:%M')
+        
         # Nếu datetime nhập vào không có thông tin múi giờ (naive)
         if v.tzinfo is None:
             # Gán cho nó múi giờ của Việt Nam
@@ -32,7 +40,15 @@ class ScheduledEventCreate(ScheduledEventBase):
 class ScheduledEventRead(ScheduledEventBase):
     id: PydanticObjectId = Field(..., alias="_id")
     pet_id: PydanticObjectId
+    pet_name: str
+    owner_name: str
 
     class Config:
         from_attributes = True
         populate_by_name = True
+
+class ScheduledEventPaginatedResponse(BaseModel):
+    data: List[ScheduledEventRead]
+    total: int
+    skip: int
+    limit: int

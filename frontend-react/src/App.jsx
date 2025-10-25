@@ -4,6 +4,9 @@ import Dashboard from './pages/Dashboard'
 import Pets from './pages/Pets'
 import Products from './pages/Products'
 import Services from './pages/Services'
+import ScheduledEvents from './pages/ScheduledEvents'
+import HealthRecords from './pages/HealthRecords'
+import Reports from './pages/Reports'
 import Login from './pages/Login'
 import Sidebar from './components/Sidebar'
 import Topbar from './components/Topbar'
@@ -40,7 +43,9 @@ export default function App(){
                 <Route path="/pets" element={<Pets/>} />
                 <Route path="/products" element={<Products/>} />
                 <Route path="/services" element={<Services/>} />
-                {/* future routes: /reports ... */}
+                <Route path="/scheduled-events" element={<ScheduledEvents/>} />
+                <Route path="/health-records" element={<HealthRecords/>} />
+                <Route path="/reports" element={<Reports/>} />
               </Routes>
             </main>
           </div>

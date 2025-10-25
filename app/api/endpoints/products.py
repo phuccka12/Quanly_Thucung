@@ -7,6 +7,7 @@ from app.crud import crud_product
 from app.api.deps import get_current_admin_user # <-- Dùng "người gác cổng" Admin
 from app.models.user import User
 from app.models.product import Product
+from app.core.config import settings
 
 router = APIRouter()
 
@@ -103,7 +104,6 @@ async def read_low_stock_products(
     current_admin: User = Depends(get_current_admin_user)
 ):
     """Return products with stock <= threshold (admin-only). If threshold is None, use app config default."""
-    from app.core.config import settings
     thr = threshold if threshold is not None else settings.LOW_STOCK_THRESHOLD
     products = await Product.find(Product.stock_quantity <= thr).to_list()
     # Return minimal dicts for frontend

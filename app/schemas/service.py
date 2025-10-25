@@ -29,5 +29,5 @@ class ServiceRead(ServiceBase):
     id: PydanticObjectId = Field(..., alias="_id")
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         populate_by_name = True
