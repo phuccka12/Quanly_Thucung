@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { Chart, ArcElement, Tooltip, Legend } from 'chart.js'
-import { Doughnut } from 'react-chartjs-2'
+import { Chart, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title } from 'chart.js'
+import { Doughnut, Line, Bar } from 'react-chartjs-2'
 import { fetchWithAuth, API_BASE_URL } from '../api'
 
 
-Chart.register(ArcElement, Tooltip, Legend)
+Chart.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title)
 
 
 // UI helpers
@@ -211,7 +211,9 @@ return (
             </div>
           </div>
         </Card>
-      </section>      <footer className="mt-8 sm:mt-12 text-center text-gray-500 text-xs sm:text-sm py-4 sm:py-6">© {new Date().getFullYear()} HIDAY PET - Hệ thống quản lý thú cưng chuyên nghiệp</footer>
+      </section>
+
+      <footer className="mt-8 sm:mt-12 text-center text-gray-500 text-xs sm:text-sm py-4 sm:py-6">© {new Date().getFullYear()} HIDAY PET - Hệ thống quản lý thú cưng chuyên nghiệp</footer>
 </>
 )
 }

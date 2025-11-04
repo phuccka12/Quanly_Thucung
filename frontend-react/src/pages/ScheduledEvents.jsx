@@ -137,11 +137,22 @@ export default function ScheduledEvents(){
     setShowAddModal(true)
   }
 
-  const handleDelete = async (eventId) => {
+  const handleDelete = async (eventOrId) => {
+    // Accept either an event object or an id string. Resolve the id robustly.
+    const resolvedId = typeof eventOrId === 'string'
+      ? eventOrId
+      : eventOrId?.id || eventOrId?._id || (eventOrId?._id && eventOrId._id.$oid) || null
+
+    if (!resolvedId) {
+      console.error('handleDelete: missing event id', eventOrId)
+      setError('Không thể xóa: ID lịch hẹn không xác định')
+      return
+    }
+
     if (!confirm('Bạn có chắc muốn xóa lịch hẹn này?')) return
 
     try {
-      await fetchWithAuth(`${API_BASE_URL}/scheduled-events/${eventId}`, {
+      await fetchWithAuth(`${API_BASE_URL}/scheduled-events/${resolvedId}`, {
         method: 'DELETE'
       })
       await loadEvents()
@@ -350,7 +361,7 @@ export default function ScheduledEvents(){
                           <i className="fas fa-edit"/>
                         </button>
                         <button
-                          onClick={() => handleDelete(event.id)}
+                          onClick={() => handleDelete(event)}
                           className="text-red-600 hover:text-red-900 p-1"
                           title="Xóa"
                         >

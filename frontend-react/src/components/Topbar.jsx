@@ -6,6 +6,14 @@ export default function Topbar(){
   const navigate = useNavigate()
   const location = useLocation()
 
+  // Load theme from localStorage on mount
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme')
+    if (savedTheme) {
+      document.documentElement.setAttribute('data-theme', savedTheme)
+    }
+  }, [])
+
   const getBreadcrumb = () => {
     switch (location.pathname) {
       case '/dashboard':
@@ -25,9 +33,10 @@ export default function Topbar(){
 
   const toggleTheme = ()=>{
     const html = document.documentElement
-    const now = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'
-    html.setAttribute('data-theme', now)
-    localStorage.setItem('theme', now)
+    const currentTheme = html.getAttribute('data-theme') || 'light'
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark'
+    html.setAttribute('data-theme', newTheme)
+    localStorage.setItem('theme', newTheme)
   }
 
   const handleLogout = () => {
@@ -59,13 +68,14 @@ export default function Topbar(){
       </button>
       <div className="relative">
         <button 
+          id="btnUserMenu"
           className="p-3 rounded-xl hover:bg-gray-100 transition-all duration-200" 
           onClick={() => setShowUserMenu(!showUserMenu)}
         >
           <i className="far fa-user text-gray-600"/>
         </button>
         {showUserMenu && (
-          <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50">
+          <div className="user-menu absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50">
             <button 
               className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
               onClick={() => setShowUserMenu(false)}
@@ -82,7 +92,7 @@ export default function Topbar(){
             </button>
             <hr className="my-1"/>
             <button 
-              className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+              className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-100 flex items-center gap-2"
               onClick={handleLogout}
             >
               <i className="fas fa-sign-out-alt"/>

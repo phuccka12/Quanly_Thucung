@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 from typing import List, Optional
 from beanie import PydanticObjectId
 
@@ -58,6 +58,17 @@ async def read_products_paginated(
         "limit": limit
     }
 
+@router.get('/low-stock', response_model=List[dict])
+async def read_low_stock_products(
+    threshold: int = None,
+    current_admin: User = Depends(get_current_admin_user)
+):
+    """Return products with stock <= threshold (admin-only). If threshold is None, use app config default."""
+    thr = threshold if threshold is not None else settings.LOW_STOCK_THRESHOLD
+    products = await Product.find(Product.stock_quantity <= thr).to_list()
+    # Return minimal dicts for frontend
+    return [{"id": str(p.id), "name": p.name, "stock_quantity": p.stock_quantity, "price": p.price} for p in products]
+
 @router.get("/{product_id}", response_model=ProductRead)
 async def read_product_by_id(
     product_id: PydanticObjectId,
@@ -72,39 +83,49 @@ async def read_product_by_id(
     return product_dict
 
 @router.put("/{product_id}", response_model=ProductRead)
-async def update_existing_product(
+async def update_product_by_id(
     *,
     product_id: PydanticObjectId,
     product_in: ProductUpdate,
     current_admin: User = Depends(get_current_admin_user)
 ):
-    product = await crud_product.get_product(product_id=product_id)
-    if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
-    updated_product = await crud_product.update_product(product=product, product_in=product_in)
+    """
+    Cập nhật thông tin một sản phẩm. (Chỉ dành cho Admin)
+    """
+    # 1. Lấy product hiện tại từ DB
+    existing_product = await crud_product.get_product(product_id=product_id)
+    if not existing_product:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Product with id {product_id} not found",
+        )
+
+    # 2. Gọi hàm CRUD để cập nhật
+    updated_product = await crud_product.update_product(product=existing_product, product_in=product_in)
     # Return dict with string id for frontend compatibility
     product_dict = updated_product.dict()
     product_dict["id"] = str(updated_product.id)
     return product_dict
 
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_existing_product(
+async def delete_product_by_id(
+    *,
     product_id: PydanticObjectId,
     current_admin: User = Depends(get_current_admin_user)
 ):
-    product = await crud_product.get_product(product_id=product_id)
-    if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
-    await crud_product.delete_product(product=product)
+    """
+    Xóa một sản phẩm. (Chỉ dành cho Admin)
+    """
+    # 1. Tìm product trong DB
+    product_to_delete = await crud_product.get_product(product_id=product_id)
+    if not product_to_delete:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Product with id {product_id} not found",
+        )
 
+    # 2. Gọi hàm CRUD để xóa
+    await crud_product.delete_product(product=product_to_delete)
 
-@router.get('/low-stock', response_model=List[dict])
-async def read_low_stock_products(
-    threshold: int = None,
-    current_admin: User = Depends(get_current_admin_user)
-):
-    """Return products with stock <= threshold (admin-only). If threshold is None, use app config default."""
-    thr = threshold if threshold is not None else settings.LOW_STOCK_THRESHOLD
-    products = await Product.find(Product.stock_quantity <= thr).to_list()
-    # Return minimal dicts for frontend
-    return [{"id": str(p.id), "name": p.name, "stock_quantity": p.stock_quantity, "price": p.price} for p in products]
+    # 3. Trả về response 204
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
