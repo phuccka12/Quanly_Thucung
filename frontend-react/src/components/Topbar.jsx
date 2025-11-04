@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { fetchWithAuth, BASE_URL, API_BASE_URL } from '../api'
+import { useContext } from 'react'
+import { ToastContext } from './ToastProvider'
 
 export default function Topbar(){
   const [showUserMenu, setShowUserMenu] = useState(false)
@@ -13,6 +16,45 @@ export default function Topbar(){
       document.documentElement.setAttribute('data-theme', savedTheme)
     }
   }, [])
+
+  // Load current user for avatar display
+  const [user, setUser] = useState(null)
+  const { unread, markAllRead, notifications, markRead, clearNotification } = useContext(ToastContext)
+  const [showNotifications, setShowNotifications] = useState(false)
+
+  // close notifications menu when clicking outside
+  useEffect(()=>{
+    const onDoc = ()=> setShowNotifications(false)
+    if (showNotifications) window.addEventListener('click', onDoc)
+    return ()=> window.removeEventListener('click', onDoc)
+  }, [showNotifications])
+  useEffect(()=>{
+    let mounted = true
+    const loadUser = async ()=>{
+      try{
+        const u = await fetchWithAuth(`${API_BASE_URL}/users/me`)
+        if (!mounted) return
+        setUser(u)
+      }catch(e){
+        // ignore (not logged in)
+        setUser(null)
+      }
+    }
+    loadUser()
+    const onToken = ()=> loadUser()
+    window.addEventListener('tokenChanged', onToken)
+    return ()=>{ mounted = false; window.removeEventListener('tokenChanged', onToken) }
+  }, [])
+
+  const resolveAvatarUrl = (u)=>{
+    if (!u) return null
+    if (u.startsWith('http://') || u.startsWith('https://')) return u
+    if (u.startsWith('/')) return `${BASE_URL}${u}`
+    return `${BASE_URL}/${u}`
+  }
+
+  // Toast listener: listen for window 'showToast' CustomEvent { detail: { message, type? } }
+  // (Toasts are handled globally by ToastProvider)
 
   const getBreadcrumb = () => {
     switch (location.pathname) {
@@ -62,23 +104,63 @@ export default function Topbar(){
       <button className="p-2 sm:p-3 rounded-xl hover:bg-gray-100 transition-all duration-200" id="btnTheme" onClick={toggleTheme}>
         <i className="fas fa-adjust text-gray-600"/>
       </button>
-      <button className="p-2 sm:p-3 rounded-xl hover:bg-gray-100 transition-all duration-200 relative">
-        <i className="far fa-bell text-gray-600"/>
-        <span className="absolute -top-1 -right-1 w-2 h-2 sm:w-3 sm:h-3 bg-red-500 rounded-full"></span>
-      </button>
+      <div className="relative">
+        <button onClick={(e)=>{ e.stopPropagation(); setShowNotifications(s=>!s) }} className="p-2 sm:p-3 rounded-xl hover:bg-gray-100 transition-all duration-200 relative">
+          <i className="far fa-bell text-gray-600"/>
+          {unread > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-[18px] h-4 px-1 text-xs flex items-center justify-center bg-red-500 text-white rounded-full">{unread}</span>
+          )}
+        </button>
+        {showNotifications && (
+          <div onClick={(e)=>e.stopPropagation()} className="absolute right-0 mt-2 w-96 max-h-80 overflow-auto bg-white rounded-xl shadow-lg border border-gray-200 z-50">
+            <div className="px-4 py-2 flex items-center justify-between border-b border-gray-100">
+              <div className="font-semibold">Thông báo</div>
+              <div className="flex items-center gap-2">
+                <button onClick={()=>{ markAllRead(); }} className="text-sm text-indigo-600">Đánh dấu tất cả đã đọc</button>
+                <button onClick={()=>{ window.dispatchEvent(new Event('markNotificationsRead')); }} className="text-sm text-gray-400">Đóng</button>
+              </div>
+            </div>
+            <div>
+              { (notifications && notifications.length>0) ? notifications.map(n=> (
+                <div key={n.id} className={`px-4 py-3 flex items-start gap-3 ${n.read ? 'bg-white' : 'bg-indigo-50'}`}>
+                  <div className="flex-1">
+                    <div className="text-sm text-gray-800">{n.message}</div>
+                    <div className="text-xs text-gray-400 mt-1">{new Date(n.created_at).toLocaleString()}</div>
+                  </div>
+                  <div className="flex flex-col items-end gap-2">
+                    {!n.read && <button onClick={()=>{ markRead(n.id) }} className="text-xs text-indigo-600">Đánh dấu</button>}
+                    <button onClick={()=>{ clearNotification(n.id) }} className="text-xs text-red-500">Xóa</button>
+                  </div>
+                </div>
+              )) : (
+                <div className="px-4 py-6 text-center text-sm text-gray-500">Không có thông báo</div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
       <div className="relative">
         <button 
           id="btnUserMenu"
-          className="p-3 rounded-xl hover:bg-gray-100 transition-all duration-200" 
+          className="p-1 rounded-xl hover:bg-gray-100 transition-all duration-200 flex items-center"
           onClick={() => setShowUserMenu(!showUserMenu)}
         >
-          <i className="far fa-user text-gray-600"/>
+          {user && user.avatar_url ? (
+            <img src={resolveAvatarUrl(user.avatar_url)} alt="avatar" className="w-9 h-9 rounded-full object-cover" />
+          ) : (
+            <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
+              <svg className="w-5 h-5 text-gray-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M20 21c0-3.866-3.582-7-8-7s-8 3.134-8 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+          )}
         </button>
         {showUserMenu && (
           <div className="user-menu absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50">
             <button 
               className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-              onClick={() => setShowUserMenu(false)}
+              onClick={() => { setShowUserMenu(false); navigate('/profile') }}
             >
               <i className="fas fa-user"/>
               Hồ sơ cá nhân
@@ -101,6 +183,7 @@ export default function Topbar(){
           </div>
         )}
       </div>
+      {/* toasts rendered by ToastProvider */}
     </div>
   )
 }

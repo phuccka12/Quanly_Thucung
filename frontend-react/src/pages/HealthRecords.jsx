@@ -188,9 +188,11 @@ export default function HealthRecords(){
       setShowAddModal(false)
       setEditingRecord(null)
       resetForm()
+  try{ window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Hồ sơ y tế đã được lưu', type: 'update' } })) }catch(e){}
     } catch (e) {
       setError('Không thể lưu hồ sơ y tế')
       console.error('submit record', e)
+      try{ window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Lưu hồ sơ y tế thất bại', type: 'error' } })) }catch(e){}
     }
   }
 
@@ -220,9 +222,11 @@ export default function HealthRecords(){
       if (selectedPet) {
         await loadRecordsForPet(selectedPet)
       }
+  try{ window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Đã xóa hồ sơ y tế', type: 'delete' } })) }catch(e){}
     } catch (e) {
       setError('Không thể xóa hồ sơ y tế')
       console.error('delete record', e)
+      try{ window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Xóa hồ sơ y tế thất bại', type: 'error' } })) }catch(e){}
     }
   }
 

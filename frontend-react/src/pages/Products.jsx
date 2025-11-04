@@ -107,9 +107,11 @@ export default function Products(){
       setShowAddModal(false)
       setEditingProduct(null)
       resetForm()
+  try{ window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Sản phẩm đã được lưu', type: 'update' } })) }catch(e){}
     } catch (e) {
       setError('Không thể lưu sản phẩm')
       console.error('save product', e)
+      try{ window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Lưu sản phẩm thất bại', type: 'error' } })) }catch(e){}
     }
   }
 
@@ -136,9 +138,11 @@ export default function Products(){
         method: 'DELETE'
       })
       await loadProducts()
+  try{ window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Đã xóa sản phẩm', type: 'delete' } })) }catch(e){}
     } catch (e) {
       setError('Không thể xóa sản phẩm')
       console.error('delete product', e)
+      try{ window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Xóa sản phẩm thất bại', type: 'error' } })) }catch(e){}
     }
   }
 

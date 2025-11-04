@@ -17,6 +17,8 @@ class User(Document):
     
     # 3. Thêm trường role với giá trị mặc định là "user"
     role: UserRole = Field(default=UserRole.USER)
+    # Optional avatar URL (served from /uploads)
+    avatar_url: Optional[str] = None
 
     class Settings:
         name = "users"

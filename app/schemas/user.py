@@ -23,6 +23,7 @@ class UserRead(BaseModel):
     id: str = Field(..., alias="_id")  # Beanie/MongoDB dùng _id
     email: EmailStr
     full_name: Optional[str] = None
+    avatar_url: Optional[str] = None
     is_active: bool
 
     if PYDANTIC_V2:
@@ -54,3 +55,9 @@ class UserRead(BaseModel):
                 return str(v)
             except Exception:
                 return v
+
+
+class UserUpdate(BaseModel):
+    full_name: Optional[str] = None
+    password: Optional[str] = None
+    avatar_url: Optional[str] = None

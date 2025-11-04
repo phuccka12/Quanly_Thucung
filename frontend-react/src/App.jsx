@@ -7,6 +7,7 @@ import Services from './pages/Services'
 import ScheduledEvents from './pages/ScheduledEvents'
 import HealthRecords from './pages/HealthRecords'
 import Reports from './pages/Reports'
+import Profile from './pages/Profile'
 import Login from './pages/Login'
 import Sidebar from './components/Sidebar'
 import Topbar from './components/Topbar'
@@ -46,6 +47,7 @@ export default function App(){
                 <Route path="/scheduled-events" element={<ScheduledEvents/>} />
                 <Route path="/health-records" element={<HealthRecords/>} />
                 <Route path="/reports" element={<Reports/>} />
+                <Route path="/profile" element={<Profile/>} />
               </Routes>
             </main>
           </div>

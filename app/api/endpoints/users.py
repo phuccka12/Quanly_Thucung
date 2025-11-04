@@ -1,9 +1,9 @@
-from fastapi import APIRouter, HTTPException, Depends
-# ĐÂY LÀ DÒNG ĐÚNG
-from app.schemas.user import UserCreate, UserRead  # Schemas từ thư mục schemas
+from fastapi import APIRouter, HTTPException, Depends, status
+from app.schemas.user import UserCreate, UserRead, UserUpdate  # Schemas từ thư mục schemas
 from app.models.user import User                   # Model từ thư mục models
 from app.crud import crud_user                     # CRUD functions từ thư mục crud
 from app.api.deps import get_current_user, get_current_admin_user # Dependency từ file deps
+from app.services.security import get_password_hash
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.errors import DuplicateKeyError
 router = APIRouter()
@@ -26,4 +26,25 @@ async def read_users_me(current_user: User = Depends(get_current_user)):
     """
     Lấy thông tin của người dùng hiện tại đang đăng nhập.
     """
+    return current_user
+
+
+@router.put("/me", response_model=UserRead)
+async def update_users_me(
+    user_in: UserUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Cập nhật thông tin profile của người dùng hiện tại.
+    """
+    # Update fields if provided
+    if user_in.full_name is not None:
+        current_user.full_name = user_in.full_name
+    if user_in.password:
+        current_user.hashed_password = get_password_hash(user_in.password)
+    if getattr(user_in, 'avatar_url', None) is not None:
+        current_user.avatar_url = user_in.avatar_url
+
+    await current_user.save()
+
     return current_user

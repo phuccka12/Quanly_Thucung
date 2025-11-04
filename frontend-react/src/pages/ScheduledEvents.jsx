@@ -118,9 +118,11 @@ export default function ScheduledEvents(){
       setShowAddModal(false)
       setEditingEvent(null)
       resetForm()
+  try{ window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Lịch hẹn đã được lưu', type: 'update' } })) }catch(e){}
     } catch (e) {
       setError('Không thể lưu lịch hẹn')
       console.error('save event', e)
+      try{ window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Lưu lịch hẹn thất bại', type: 'error' } })) }catch(e){}
     }
   }
 
@@ -156,9 +158,11 @@ export default function ScheduledEvents(){
         method: 'DELETE'
       })
       await loadEvents()
+  try{ window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Đã xóa lịch hẹn', type: 'delete' } })) }catch(e){}
     } catch (e) {
       setError('Không thể xóa lịch hẹn')
       console.error('delete event', e)
+      try{ window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Xóa lịch hẹn thất bại', type: 'error' } })) }catch(e){}
     }
   }
 

@@ -100,9 +100,11 @@ export default function Pets(){
       setShowAddModal(false)
       setEditingPet(null)
       resetForm()
+  try{ window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Thú cưng đã được lưu', type: 'update' } })) }catch(e){}
     } catch (e) {
       setError('Không thể lưu thú cưng')
       console.error('save pet', e)
+      try{ window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Lưu thú cưng thất bại', type: 'error' } })) }catch(e){}
     }
   }
 
@@ -130,9 +132,11 @@ export default function Pets(){
         method: 'DELETE'
       })
       await loadPets()
+  try{ window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Đã xóa thú cưng', type: 'delete' } })) }catch(e){}
     } catch (e) {
       setError('Không thể xóa thú cưng')
       console.error('delete pet', e)
+      try{ window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Xóa thú cưng thất bại', type: 'error' } })) }catch(e){}
     }
   }
 

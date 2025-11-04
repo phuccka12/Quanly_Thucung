@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom'
 
 export default function Sidebar(){
   return (
-    <aside className="bg-white/95 backdrop-blur-md border-r border-white/20 shadow-2xl flex flex-col h-screen" aria-label="Thanh điều hướng">
+    <aside className="bg-white/95 backdrop-blur-md border-r border-white/20 shadow-3xl flex flex-col h-screen" aria-label="Thanh điều hướng">
       <div className="p-6 border-b border-gray-100">
         <div className="font-bold text-xl flex gap-3 items-center text-indigo-600">
           <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-xl flex items-center justify-center text-white">

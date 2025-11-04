@@ -56,11 +56,35 @@ export default function Reports(){
   }
 
   const handleExport = () => {
-    // Simple export as JSON for now
-    const dataStr = JSON.stringify(reportData, null, 2)
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr)
+    if (!reportData) return
 
-    const exportFileDefaultName = `bao-cao-doanh-thu-${new Date().toISOString().split('T')[0]}.json`
+    // Build a CSV export: summary + product table + service table
+    const rows = []
+    // Summary
+    rows.push(['Key', 'Value'])
+    rows.push(['Total Revenue', reportData.total_revenue || 0])
+    rows.push(['Records Count', reportData.records_count || 0])
+    rows.push([])
+
+    // Products
+    rows.push(['Products'])
+    rows.push(['Product', 'Quantity', 'Revenue'])
+    Object.entries(reportData.by_product || {}).forEach(([name, d]) => {
+      rows.push([name, d.quantity || 0, d.revenue || 0])
+    })
+    rows.push([])
+
+    // Services
+    rows.push(['Services'])
+    rows.push(['Service', 'Count', 'Revenue'])
+    Object.entries(reportData.by_service || {}).forEach(([name, d]) => {
+      rows.push([name, d.count || 0, d.revenue || 0])
+    })
+
+    // Convert rows to CSV string
+    const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n')
+    const dataUri = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv)
+    const exportFileDefaultName = `bao-cao-doanh-thu-${new Date().toISOString().split('T')[0]}.csv`
 
     const linkElement = document.createElement('a')
     linkElement.setAttribute('href', dataUri)

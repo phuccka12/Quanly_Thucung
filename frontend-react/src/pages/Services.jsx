@@ -107,9 +107,11 @@ export default function Services(){
       setShowAddModal(false)
       setEditingService(null)
       resetForm()
+  try{ window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Dịch vụ đã được lưu', type: 'update' } })) }catch(e){}
     } catch (e) {
       setError('Không thể lưu dịch vụ')
       console.error('save service', e)
+      try{ window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Lưu dịch vụ thất bại', type: 'error' } })) }catch(e){}
     }
   }
 
@@ -136,9 +138,11 @@ export default function Services(){
         method: 'DELETE'
       })
       await loadServices()
+  try{ window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Đã xóa dịch vụ', type: 'delete' } })) }catch(e){}
     } catch (e) {
       setError('Không thể xóa dịch vụ')
       console.error('delete service', e)
+      try{ window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Xóa dịch vụ thất bại', type: 'error' } })) }catch(e){}
     }
   }
 
