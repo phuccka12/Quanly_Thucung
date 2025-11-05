@@ -55,6 +55,19 @@ export default function Pets(){
     loadPets()
   }, [currentPage, search])
 
+  // listen for global navigateToSearch events from Topbar
+  useEffect(()=>{
+    const handler = (e)=>{
+      const d = e.detail || {}
+      if (d.category === 'pets' && typeof d.search === 'string'){
+        setSearch(d.search)
+        setCurrentPage(1)
+      }
+    }
+    window.addEventListener('navigateToSearch', handler)
+    return ()=> window.removeEventListener('navigateToSearch', handler)
+  }, [])
+
   const loadPets = async () => {
     setLoading(true)
     try {

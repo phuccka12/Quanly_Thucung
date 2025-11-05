@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { fetchWithAuth, BASE_URL, API_BASE_URL } from '../api'
 import { useContext } from 'react'
 import { ToastContext } from './ToastProvider'
+import { useRef } from 'react'
 
 export default function Topbar(){
   const [showUserMenu, setShowUserMenu] = useState(false)
@@ -21,6 +22,13 @@ export default function Topbar(){
   const [user, setUser] = useState(null)
   const { unread, markAllRead, notifications, markRead, clearNotification } = useContext(ToastContext)
   const [showNotifications, setShowNotifications] = useState(false)
+  const [query, setQuery] = useState('')
+  const [suggestions, setSuggestions] = useState({ products: [], pets: [], services: [] })
+  const [pageSuggestions, setPageSuggestions] = useState([])
+  const [loadingSearch, setLoadingSearch] = useState(false)
+  const [showSearchResults, setShowSearchResults] = useState(false)
+  const searchTimer = useRef(null)
+  const searchAbort = useRef(null)
 
   // close notifications menu when clicking outside
   useEffect(()=>{
@@ -28,6 +36,16 @@ export default function Topbar(){
     if (showNotifications) window.addEventListener('click', onDoc)
     return ()=> window.removeEventListener('click', onDoc)
   }, [showNotifications])
+  // close search results when clicking outside
+  useEffect(()=>{
+    const onDoc = (e)=>{
+      if(!e.target.closest) return
+      const inside = e.target.closest('#topbar-search')
+      if(!inside) setShowSearchResults(false)
+    }
+    if (showSearchResults) window.addEventListener('click', onDoc)
+    return ()=> window.removeEventListener('click', onDoc)
+  }, [showSearchResults])
   useEffect(()=>{
     let mounted = true
     const loadUser = async ()=>{
@@ -51,6 +69,63 @@ export default function Topbar(){
     if (u.startsWith('http://') || u.startsWith('https://')) return u
     if (u.startsWith('/')) return `${BASE_URL}${u}`
     return `${BASE_URL}/${u}`
+  }
+
+  // handle search input with debounce
+  const handleSearchChange = (e)=>{
+    const v = e.target.value
+    setQuery(v)
+    setShowSearchResults(!!v)
+    if (searchTimer.current) clearTimeout(searchTimer.current)
+    if (searchAbort.current) { try{ searchAbort.current.abort() }catch(e){} }
+    // client-side page matches (quick navigation)
+    const pages = [
+      { name: 'Tổng quan', path: '/dashboard' },
+      { name: 'Thú cưng', path: '/pets' },
+      { name: 'Sản phẩm', path: '/products' },
+      { name: 'Dịch vụ', path: '/services' },
+      { name: 'Lịch hẹn', path: '/scheduled-events' },
+      { name: 'Hồ sơ y tế', path: '/health-records' },
+      { name: 'Báo cáo', path: '/reports' },
+      { name: 'Hồ sơ cá nhân', path: '/profile' }
+    ]
+    if (!v || v.length < 2){
+      setSuggestions({ products: [], pets: [], services: [] })
+      setPageSuggestions([])
+      return
+    }
+    const qLow = v.toLowerCase()
+    setPageSuggestions(pages.filter(p=> p.name.toLowerCase().includes(qLow)))
+    searchTimer.current = setTimeout(async ()=>{
+      setLoadingSearch(true)
+      const q = encodeURIComponent(v)
+      const ac = new AbortController(); searchAbort.current = ac
+      try{
+        const [p, pe, s] = await Promise.all([
+          fetchWithAuth(`${API_BASE_URL}/products/paginated?skip=0&limit=5&search=${q}`, { signal: ac.signal }).catch(()=>({ data: [] })),
+          fetchWithAuth(`${API_BASE_URL}/pets/?skip=0&limit=5&search=${q}`, { signal: ac.signal }).catch(()=>({ data: [] })),
+          fetchWithAuth(`${API_BASE_URL}/services/paginated?skip=0&limit=5&search=${q}`, { signal: ac.signal }).catch(()=>({ data: [] })),
+        ])
+        setSuggestions({ products: p.data || [], pets: pe.data || [], services: s.data || [] })
+      }catch(err){
+        console.error('search error', err)
+      }finally{
+        setLoadingSearch(false)
+      }
+    }, 300)
+  }
+
+  const handleSelectSuggestion = (category, item, q)=>{
+    // dispatch event so list pages can pick up and set their local search state
+    window.dispatchEvent(new CustomEvent('navigateToSearch', { detail: { category, search: q } }))
+    // navigate to the list page
+    if (category === 'products') navigate('/products')
+    if (category === 'pets') navigate('/pets')
+    if (category === 'services') navigate('/services')
+    // close dropdown
+    setShowSearchResults(false)
+    setQuery('')
+    setSuggestions({ products: [], pets: [], services: [] })
   }
 
   // Toast listener: listen for window 'showToast' CustomEvent { detail: { message, type? } }
@@ -97,9 +172,61 @@ export default function Topbar(){
         Bảng điều khiển / <strong className="text-indigo-600">{getBreadcrumb()}</strong>
       </div>
       <div className="flex-1"/>
-      <div className="relative hidden sm:block">
+      <div id="topbar-search" className="relative hidden sm:block">
         <i className="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"/>
-        <input className="pl-12 pr-4 py-3 w-64 lg:w-80 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm" placeholder="Tìm nhanh…"/>
+        <input value={query} onChange={handleSearchChange} className="pl-12 pr-4 py-3 w-64 lg:w-80 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm" placeholder="Tìm nhanh…"/>
+        { showSearchResults && (
+          <div className="absolute left-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 z-50">
+            <div className="p-2 text-xs text-gray-500">Gợi ý</div>
+            <div className="max-h-56 overflow-auto">
+              {pageSuggestions.length > 0 && (
+                <div>
+                  <div className="px-4 py-1 text-xs text-gray-400">Trang</div>
+                  {pageSuggestions.map(pg => (
+                    <button key={pg.path} type="button" onMouseDown={(e)=>{ e.preventDefault(); e.stopPropagation(); navigate(pg.path); setShowSearchResults(false); setQuery('') }} className="w-full text-left px-4 py-2 hover:bg-gray-50 cursor-pointer">
+                      <div className="text-sm text-gray-800">{pg.name}</div>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {loadingSearch && <div className="px-4 py-2 text-sm text-gray-500">Đang tìm...</div>}
+              {(!loadingSearch && (suggestions.products.length || suggestions.pets.length || suggestions.services.length)) ? (
+                <div>
+                  {suggestions.products.length > 0 && (
+                    <div>
+                      <div className="px-4 py-1 text-xs text-gray-400">Sản phẩm</div>
+                      {suggestions.products.map(p=> (
+                        <button key={`prod-${p.id || p._id || p.name}`} type="button" onMouseDown={(e)=>{ e.preventDefault(); e.stopPropagation(); console.debug('select product', p); handleSelectSuggestion('products', p, query) }} className="w-full text-left px-4 py-2 hover:bg-gray-50 cursor-pointer">
+                          <div className="text-sm text-gray-800">{p.name}</div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {suggestions.pets.length > 0 && (
+                    <div>
+                      <div className="px-4 py-1 text-xs text-gray-400">Thú cưng</div>
+                      {suggestions.pets.map(p=> (
+                        <button key={`pet-${p.id || p._id || p.name}`} type="button" onMouseDown={(e)=>{ e.preventDefault(); e.stopPropagation(); console.debug('select pet', p); handleSelectSuggestion('pets', p, query) }} className="w-full text-left px-4 py-2 hover:bg-gray-50 cursor-pointer">
+                          <div className="text-sm text-gray-800">{p.name} <span className="text-xs text-gray-400">— {p.owner_name}</span></div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {suggestions.services.length > 0 && (
+                    <div>
+                      <div className="px-4 py-1 text-xs text-gray-400">Dịch vụ</div>
+                      {suggestions.services.map(sv=> (
+                        <button key={`svc-${sv.id || sv._id || sv.name}`} type="button" onMouseDown={(e)=>{ e.preventDefault(); e.stopPropagation(); console.debug('select service', sv); handleSelectSuggestion('services', sv, query) }} className="w-full text-left px-4 py-2 hover:bg-gray-50 cursor-pointer">
+                          <div className="text-sm text-gray-800">{sv.name}</div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (!loadingSearch && <div className="px-4 py-3 text-sm text-gray-500">Không có kết quả</div>)}
+            </div>
+          </div>
+        )}
       </div>
       <button className="p-2 sm:p-3 rounded-xl hover:bg-gray-100 transition-all duration-200" id="btnTheme" onClick={toggleTheme}>
         <i className="fas fa-adjust text-gray-600"/>

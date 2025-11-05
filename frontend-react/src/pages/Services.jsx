@@ -52,6 +52,19 @@ export default function Services(){
     loadServices()
   }, [currentPage, search])
 
+  // listen for global navigateToSearch events from Topbar
+  useEffect(()=>{
+    const handler = (e)=>{
+      const d = e.detail || {}
+      if (d.category === 'services' && typeof d.search === 'string'){
+        setSearch(d.search)
+        setCurrentPage(1)
+      }
+    }
+    window.addEventListener('navigateToSearch', handler)
+    return ()=> window.removeEventListener('navigateToSearch', handler)
+  }, [])
+
   const loadServices = async () => {
     setLoading(true)
     try {
