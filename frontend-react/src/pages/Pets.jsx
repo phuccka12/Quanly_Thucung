@@ -51,6 +51,36 @@ export default function Pets(){
     image_url: ''
   })
 
+  // helper: derive age (years) from date_of_birth and provide weight from weight_kg
+  const normalizePet = (p) => {
+    if (!p) return p
+    const out = { ...p }
+    // weight: prefer weight_kg field
+    if (p.weight_kg !== undefined && p.weight_kg !== null) {
+      out.weight = p.weight_kg
+    } else if (p.weight !== undefined) {
+      out.weight = p.weight
+    }
+
+    // age: derive from date_of_birth if present
+    if (p.date_of_birth) {
+      try {
+        const dob = new Date(p.date_of_birth)
+        const diff = Date.now() - dob.getTime()
+        const age = Math.floor(new Date(diff).getUTCFullYear() - 1970)
+        out.age = age
+      } catch (e) {
+        out.age = p.age || ''
+      }
+    } else {
+      out.age = p.age || ''
+    }
+
+    // ensure id exists
+    out.id = out.id || out._id || (out._id && (out._id.$oid || out._id['$oid']))
+    return out
+  }
+
   useEffect(() => {
     loadPets()
   }, [currentPage, search])
@@ -78,8 +108,9 @@ export default function Pets(){
       })
       if (search) params.append('search', search)
       
-      const response = await fetchWithAuth(`${API_BASE_URL}/pets/?${params}`)
-      setPets(response.data || [])
+  const response = await fetchWithAuth(`${API_BASE_URL}/pets/?${params}`)
+  const raw = response.data || []
+  setPets(raw.map(normalizePet))
       setTotal(response.total || 0)
     } catch (e) {
       setError('Không thể tải danh sách thú cưng')
@@ -99,14 +130,30 @@ export default function Pets(){
         : `${API_BASE_URL}/pets/`
       const method = editingPet ? 'PUT' : 'POST'
 
+      // prepare payload matching backend schema (date_of_birth, weight_kg)
+      const payload = { ...formData }
+      // convert weight -> weight_kg
+      if (payload.weight !== undefined && payload.weight !== '') {
+        const w = parseFloat(payload.weight)
+        if (!Number.isNaN(w)) payload.weight_kg = w
+      }
+      delete payload.weight
+
+      // convert age -> date_of_birth (approximate: subtract years)
+      if (payload.age !== undefined && payload.age !== '') {
+        const years = parseInt(payload.age)
+        if (!Number.isNaN(years) && years > 0) {
+          const now = new Date()
+          const dob = new Date(now.getFullYear() - years, now.getMonth(), now.getDate())
+          payload.date_of_birth = dob.toISOString().split('T')[0]
+        }
+      }
+      delete payload.age
+
       const data = await fetchWithAuth(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          age: parseInt(formData.age) || 0,
-          weight: parseFloat(formData.weight) || 0
-        })
+        body: JSON.stringify(payload)
       })
 
       await loadPets()
@@ -122,17 +169,18 @@ export default function Pets(){
   }
 
   const handleEdit = (pet) => {
-    setEditingPet(pet)
+    const norm = normalizePet(pet)
+    setEditingPet(norm)
     setFormData({
-      name: pet.name || '',
-      species: pet.species || '',
-      breed: pet.breed || '',
-      age: pet.age?.toString() || '',
-      weight: pet.weight?.toString() || '',
-      owner_name: pet.owner_name || '',
-      owner_email: pet.owner_email || '',
-      owner_phone: pet.owner_phone || '',
-      image_url: pet.image_url || ''
+      name: norm.name || '',
+      species: norm.species || '',
+      breed: norm.breed || '',
+      age: norm.age?.toString() || '',
+      weight: norm.weight?.toString() || '',
+      owner_name: norm.owner_name || '',
+      owner_email: norm.owner_email || '',
+      owner_phone: norm.owner_phone || '',
+      image_url: norm.image_url || ''
     })
     setShowAddModal(true)
   }

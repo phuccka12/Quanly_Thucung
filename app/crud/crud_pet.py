@@ -1,4 +1,6 @@
 from typing import List, Optional
+import datetime
+import logging
 from app.models.pet import Pet
 from app.schemas.pet import PetCreate, PetUpdate
 
@@ -81,13 +83,45 @@ async def update_pet(pet: Pet, pet_in: PetUpdate) -> Pet:
     """
     # Lấy dữ liệu cần update, chỉ lấy các trường được cung cấp
     update_data = pet_in.dict(exclude_unset=True)
-    
+
+    # Normalize types coming from frontend: convert strings to proper types
+    logger = logging.getLogger("app.crud.pet")
+    for key, value in list(update_data.items()):
+        # Convert date_of_birth if it's a string
+        if key == "date_of_birth" and value is not None:
+            if isinstance(value, str):
+                try:
+                    update_data[key] = datetime.date.fromisoformat(value)
+                except Exception:
+                    try:
+                        update_data[key] = datetime.datetime.fromisoformat(value).date()
+                    except Exception:
+                        logger.debug("Could not parse date_of_birth=%r", value)
+        # Convert weight_kg to float if it's a string
+        if key == "weight_kg" and value is not None:
+            if isinstance(value, str):
+                try:
+                    update_data[key] = float(value)
+                except Exception:
+                    logger.debug("Could not parse weight_kg=%r", value)
+
+    logger.info("Updating pet %s with: %s", getattr(pet, 'id', '<unknown>'), update_data)
+
     # Cập nhật đối tượng pet hiện tại với dữ liệu mới
     for field, value in update_data.items():
-        setattr(pet, field, value)
-    
-    # Lưu lại vào database
-    await pet.save()
+        # ensure no problematic non-serializable types remain
+        if isinstance(value, datetime.date):
+            # convert to ISO string to avoid encoder issues
+            setattr(pet, field, value.isoformat())
+        else:
+            setattr(pet, field, value)
+
+    # Lưu lại vào database - catch and log encoding errors for debugging
+    try:
+        await pet.save()
+    except Exception as e:
+        logger.exception("Failed to save pet %s after update; update_data=%s", getattr(pet, 'id', '<unknown>'), update_data)
+        raise
     return pet 
 # Hàm xóa pet
 async def delete_pet(pet: Pet) -> None:
