@@ -57,6 +57,12 @@ const getRecordTypeColor = (type) => {
 }
 
 export default function HealthRecords(){
+  // Normalize record coming from backend (some responses use `_id`)
+  const normalizeRecord = (r) => {
+    if (!r) return r
+    const id = r.id || r._id || (r._id && (r._id.$oid || r._id['$oid']))
+    return { ...r, id }
+  }
   const [loading, setLoading] = useState(true)
   const [records, setRecords] = useState([])
   const [pets, setPets] = useState([])
@@ -151,14 +157,18 @@ export default function HealthRecords(){
       const response = await fetchWithAuth(`${API_BASE_URL}/health-records/for-pet/${petId}`)
       console.debug('loadRecordsForPet response:', response)
       // backend may return an array directly or an object with `data`.
+      let raw = []
       if (Array.isArray(response)) {
-        setRecords(response)
+        raw = response
       } else if (response && Array.isArray(response.data)) {
-        setRecords(response.data)
+        raw = response.data
       } else {
-        // fallback - try to coerce
-        setRecords(response || [])
+        raw = response || []
       }
+
+      // normalize each record so frontend can reliably use `record.id`
+      const normalized = raw.map(normalizeRecord)
+      setRecords(normalized)
     } catch (e) {
       setError('Không thể tải hồ sơ y tế')
       console.error('load records', e)
@@ -190,9 +200,51 @@ export default function HealthRecords(){
         : `${API_BASE_URL}/health-records/for-pet/${selectedPet}`
       const method = editingRecord ? 'PUT' : 'POST'
 
+      // Prepare payload: strip empty strings, convert numbers, and validate used items
+      const payload = { ...formData }
+
+      // strip empty string fields
+      Object.keys(payload).forEach((k) => {
+        if (payload[k] === '') delete payload[k]
+      })
+
+      // convert weight to number if present
+      if (payload.weight_kg !== undefined) {
+        const w = parseFloat(payload.weight_kg)
+        if (Number.isFinite(w)) payload.weight_kg = w
+        else delete payload.weight_kg
+      }
+
+      // normalize used_products: keep only valid entries
+      if (Array.isArray(payload.used_products)) {
+        payload.used_products = payload.used_products
+          .map(up => ({
+            product_id: up.product_id || '',
+            quantity: parseInt(up.quantity) || 0,
+            unit_price: parseFloat(up.unit_price) || 0
+          }))
+          .filter(up => up.product_id && up.quantity > 0 && up.unit_price > 0)
+        if (payload.used_products.length === 0) delete payload.used_products
+      }
+
+      // normalize used_services: keep only valid entries
+      if (Array.isArray(payload.used_services)) {
+        payload.used_services = payload.used_services
+          .map(us => ({ name: us.name?.trim?.() || '', price: parseFloat(us.price) || 0 }))
+          .filter(us => us.name && us.price > 0)
+        if (payload.used_services.length === 0) delete payload.used_services
+      }
+
+      // For update (PUT) the backend schema (HealthRecordUpdate) doesn't accept used_products/used_services
+      // so remove them on PUT.
+      if (method === 'PUT') {
+        delete payload.used_products
+        delete payload.used_services
+      }
+
       const response = await fetchWithAuth(url, {
         method,
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       })
 
       if (selectedPet) {
