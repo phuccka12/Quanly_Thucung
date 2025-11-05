@@ -28,7 +28,12 @@ const Modal = ({ isOpen, onClose, title, children }) => {
 }
 
 const formatDate = (dateString) => {
-  return new Date(dateString).toLocaleDateString('vi-VN')
+  try {
+    if (!dateString) return '-'
+    return new Date(dateString).toLocaleDateString('vi-VN')
+  } catch (e) {
+    return '-'
+  }
 }
 
 const getRecordTypeLabel = (type) => {
@@ -144,7 +149,16 @@ export default function HealthRecords(){
     setLoading(true)
     try {
       const response = await fetchWithAuth(`${API_BASE_URL}/health-records/for-pet/${petId}`)
-      setRecords(response || [])
+      console.debug('loadRecordsForPet response:', response)
+      // backend may return an array directly or an object with `data`.
+      if (Array.isArray(response)) {
+        setRecords(response)
+      } else if (response && Array.isArray(response.data)) {
+        setRecords(response.data)
+      } else {
+        // fallback - try to coerce
+        setRecords(response || [])
+      }
     } catch (e) {
       setError('Không thể tải hồ sơ y tế')
       console.error('load records', e)
@@ -356,8 +370,8 @@ export default function HealthRecords(){
                   </td>
                 </tr>
               ) : (
-                records.map(record => (
-                  <tr key={record.id} className="hover:bg-gray-50">
+                records.map((record, idx) => (
+                  <tr key={record.id || record._id || `rec-${idx}`} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
                       <div className="font-medium text-gray-900">{formatDate(record.date)}</div>
                     </td>

@@ -70,11 +70,34 @@ origins += [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,       # Cho phép các origin được truy cập
+    # For development convenience allow all origins so frontend can call API even on error responses.
+    # NOTE: This is permissive and should be restricted in production.
+    allow_origins=["*"],       # Cho phép tất cả origin (dev only)
     allow_credentials=True,      # Cho phép gửi cookie/authorization headers
     allow_methods=["*"],         # Cho phép tất cả các phương thức (GET, POST, etc.)
     allow_headers=["*"],         # Cho phép tất cả các header
 )
+
+# Ensure unhandled exceptions still return a JSON response with CORS headers so the
+# browser doesn't hide the real error behind a CORS failure. This is a dev-time helper.
+from fastapi.responses import JSONResponse
+import traceback
+
+
+@app.exception_handler(Exception)
+async def generic_exception_handler(request, exc):
+    # Log full traceback to console for debugging
+    tb = traceback.format_exc()
+    print("Unhandled exception in request:", tb)
+    # Return traceback in response body to help debugging on local dev
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error", "traceback": tb},
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Credentials": "true",
+        },
+    )
 
 # File upload endpoint
 @api_router_v1.post("/upload", tags=["Upload"])

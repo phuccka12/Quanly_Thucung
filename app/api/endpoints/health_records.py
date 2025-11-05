@@ -6,8 +6,54 @@ from app.schemas.health_record import HealthRecordRead, HealthRecordUpdate , Hea
 from app.crud import crud_health_record, crud_pet
 from app.api.deps import get_current_admin_user
 from app.models.user import User
+from beanie import PydanticObjectId
+from typing import Optional
 
 router = APIRouter()
+
+
+def _convert_used_products(used_products: Optional[list]):
+    """Convert UsedProduct instances or dicts into dicts matching UsedProductSchema.
+    Ensure product_id is a PydanticObjectId when possible.
+    """
+    if not used_products:
+        return None
+    out = []
+    for up in used_products:
+        # up can be app.models.health_record.UsedProduct (pydantic BaseModel) or a dict
+        if hasattr(up, "product_id"):
+            pid = up.product_id
+            try:
+                pid = PydanticObjectId(str(pid))
+            except Exception:
+                # leave as-is if conversion fails
+                pass
+            out.append({"product_id": pid, "quantity": int(up.quantity), "unit_price": float(up.unit_price)})
+        elif isinstance(up, dict):
+            # convert product_id to PydanticObjectId if it's present
+            pid = up.get("product_id")
+            try:
+                pid = PydanticObjectId(str(pid))
+            except Exception:
+                pass
+            out.append({"product_id": pid, "quantity": int(up.get("quantity")), "unit_price": float(up.get("unit_price"))})
+        else:
+            out.append(up)
+    return out
+
+
+def _convert_used_services(used_services: Optional[list]):
+    if not used_services:
+        return None
+    out = []
+    for us in used_services:
+        if hasattr(us, "name"):
+            out.append({"name": us.name, "price": float(us.price)})
+        elif isinstance(us, dict):
+            out.append({"name": us.get("name"), "price": float(us.get("price"))})
+        else:
+            out.append(us)
+    return out
 
 @router.post("/for-pet/{pet_id}", response_model=HealthRecordRead, status_code=status.HTTP_201_CREATED)
 async def create_health_record(
@@ -38,8 +84,8 @@ async def create_health_record(
         notes=new_record.notes,
         next_due_date=new_record.next_due_date,
         weight_kg=new_record.weight_kg,
-        used_products=new_record.used_products,
-        used_services=new_record.used_services
+        used_products=_convert_used_products(new_record.used_products),
+        used_services=_convert_used_services(new_record.used_services)
     )
 
 @router.get("/for-pet/{pet_id}", response_model=List[HealthRecordRead])
@@ -65,8 +111,8 @@ async def get_health_records_for_pet(
             notes=record.notes,
             next_due_date=record.next_due_date,
             weight_kg=record.weight_kg,
-            used_products=record.used_products,
-            used_services=record.used_services
+            used_products=_convert_used_products(record.used_products),
+            used_services=_convert_used_services(record.used_services)
         )
         response_list.append(record_data)
     
@@ -98,8 +144,8 @@ async def get_health_record_by_id(
         notes=record.notes,
         next_due_date=record.next_due_date,
         weight_kg=record.weight_kg,
-        used_products=record.used_products,
-        used_services=record.used_services
+        used_products=_convert_used_products(record.used_products),
+        used_services=_convert_used_services(record.used_services)
     )
 
 @router.put("/{record_id}", response_model=HealthRecordRead)
@@ -133,8 +179,8 @@ async def update_health_record_by_id(
         notes=updated_record.notes,
         next_due_date=updated_record.next_due_date,
         weight_kg=updated_record.weight_kg,
-        used_products=updated_record.used_products,
-        used_services=updated_record.used_services
+        used_products=_convert_used_products(updated_record.used_products),
+        used_services=_convert_used_services(updated_record.used_services)
     )
 
 @router.delete("/{record_id}", status_code=status.HTTP_204_NO_CONTENT)
