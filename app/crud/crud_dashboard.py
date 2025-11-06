@@ -1,10 +1,37 @@
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List
+import motor.motor_asyncio
+from app.core.config import settings
 from app.models.pet import Pet
 from app.models.scheduled_event import ScheduledEvent
 from app.models.health_record import HealthRecord, RecordType
 from app.models.service import Service
 from app.schemas.dashboard import DashboardData
+
+
+def _get_motor_collection(model):
+    """Return a motor collection for a Beanie Document model.
+
+    Tries model.get_motor_collection(), then model.get_collection(),
+    otherwise falls back to creating an AsyncIOMotorClient and returning
+    the collection by the model Settings.name.
+    """
+    # Prefer built-in helper if available
+    if hasattr(model, "get_motor_collection"):
+        return model.get_motor_collection()
+    if hasattr(model, "get_collection"):
+        return model.get_collection()
+
+    # Fallback: create a motor client and use the collection name from model.Settings
+    coll_name = None
+    try:
+        coll_name = model.Settings.name
+    except Exception:
+        # last resort: use lowercased class name
+        coll_name = model.__name__.lower() + "s"
+
+    client = motor.motor_asyncio.AsyncIOMotorClient(settings.MONGODB_URL)
+    return client[settings.DATABASE_NAME][coll_name]
 
 async def get_dashboard_data() -> DashboardData:
     """
@@ -37,7 +64,7 @@ async def get_dashboard_data() -> DashboardData:
             {"$group": {"_id": "$species", "count": {"$sum": 1}}}
         ]
 
-        motor_collection = Pet.get_motor_collection()
+        motor_collection = _get_motor_collection(Pet)
         species_result_cursor = motor_collection.aggregate(species_pipeline)
         species_result = await species_result_cursor.to_list(length=None)
         pets_by_species_dict = {item["_id"]: item["count"] for item in species_result if item["_id"]}
@@ -65,7 +92,7 @@ async def get_dashboard_data() -> DashboardData:
                 {"$sort": {"_id": 1}}
             ]
 
-            health_motor_collection = HealthRecord.get_motor_collection()
+            health_motor_collection = _get_motor_collection(HealthRecord)
             revenue_result = await health_motor_collection.aggregate(revenue_pipeline).to_list(length=None)
             revenue_by_date = {item["_id"]: item["total"] for item in revenue_result}
             print(f"Revenue data: {revenue_by_date}")
@@ -127,7 +154,7 @@ async def get_dashboard_data() -> DashboardData:
                 {"$sort": {"_id": 1}}
             ]
 
-            events_motor_collection = ScheduledEvent.get_motor_collection()
+            events_motor_collection = _get_motor_collection(ScheduledEvent)
             events_result = await events_motor_collection.aggregate(events_pipeline).to_list(length=None)
             events_by_month = {item["_id"]: item["count"] for item in events_result}
             print(f"Events by month: {events_by_month}")

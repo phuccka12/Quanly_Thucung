@@ -1,47 +1,54 @@
+# ...existing code...
+import sys
 import asyncio
-from app.db.database import init_db
-from app.models.scheduled_event import ScheduledEvent
-from beanie import init_beanie
-from motor.motor_asyncio import AsyncIOMotorClient
 import os
 from dotenv import load_dotenv
+from motor.motor_asyncio import AsyncIOMotorClient
+from beanie import init_beanie
+from app.models.scheduled_event import ScheduledEvent
+
+load_dotenv()  # đọc .env từ project root
 
 async def test_db():
-    load_dotenv()
+    # đọc env (chú ý dùng cùng key với .env của project)
+    mongo_url = os.getenv("MONGODB_URL", os.getenv("MONGO_URL", "mongodb://localhost:27017"))
+    db_name = os.getenv("DATABASE_NAME", "pet_management")
 
-    # Kết nối đến MongoDB
-    mongo_url = os.getenv("MONGO_URL", "mongodb://localhost:27017")
     client = AsyncIOMotorClient(mongo_url)
+    try:
+        # Khởi tạo Beanie với document models cần thiết
+        await init_beanie(database=client[db_name], document_models=[ScheduledEvent])
 
-    # Khởi tạo Beanie
-    await init_beanie(database=client.pet_management, document_models=[ScheduledEvent])
+        print("✅ Kết nối MongoDB thành công!")
 
-    print("✅ Kết nối MongoDB thành công!")
+        # Đếm số lượng scheduled events
+        count = await ScheduledEvent.count()
+        print(f"📊 Số lượng scheduled events trong database: {count}")
 
-    # Đếm số lượng scheduled events
-    count = await ScheduledEvent.count()
-    print(f"📊 Số lượng scheduled events trong database: {count}")
+        # Lấy một vài events mẫu
+        events = await ScheduledEvent.find().limit(3).to_list()
+        if events:
+            print("📅 Các events mẫu:")
+            for event in events:
+                print(f"  - ID: {getattr(event, 'id', getattr(event, '_id', None))}")
+                print(f"    Title: {getattr(event, 'title', None)}")
+                print(f"    Pet: {getattr(event, 'pet', None)}")
+                print(f"    Datetime: {getattr(event, 'event_datetime', None)}")
+                print(f"    Type: {getattr(event, 'event_type', None)}")
+                print(f"    Completed: {getattr(event, 'is_completed', None)}")
+                print()
+        else:
+            print("📭 Không có events nào trong database")
 
-    # Lấy một vài events mẫu
-    events = await ScheduledEvent.find().limit(3).to_list()
-    if events:
-        print("📅 Các events mẫu:")
-        for event in events:
-            print(f"  - ID: {event.id}")
-            print(f"    Title: {event.title}")
-            print(f"    Pet: {event.pet}")
-            print(f"    Datetime: {event.event_datetime}")
-            print(f"    Type: {event.event_type}")
-            print(f"    Completed: {event.is_completed}")
-            print()
-    else:
-        print("📭 Không có events nào trong database")
-
-    # Test kết nối với collection scheduled_events
-    db = client.pet_management
-    collection = db.scheduled_events
-    doc_count = await collection.count_documents({})
-    print(f"📊 Số documents trong collection 'scheduled_events': {doc_count}")
+        # Kiểm tra trực tiếp collection
+        db = client[db_name]
+        collection = db.scheduled_events
+        doc_count = await collection.count_documents({})
+        print(f"📊 Số documents trong collection 'scheduled_events': {doc_count}")
+    finally:
+        client.close()
 
 if __name__ == "__main__":
+    # chạy từ project root (đảm bảo package 'app' có thể import)
     asyncio.run(test_db())
+# ...existing code...
