@@ -8,6 +8,12 @@ It will ask for email and password and create a user with role ADMIN.
 """
 import asyncio
 import getpass
+import sys
+from pathlib import Path
+
+# Ensure project root is on sys.path so we can import `app` when running the script
+project_root = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(project_root))
 
 from app.db.database import init_db
 from app.core.config import settings

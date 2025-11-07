@@ -6,6 +6,7 @@ from app.models.scheduled_event import ScheduledEvent
 from app.models.pet import Pet
 from app.core.config import settings
 from app.models.product import Product
+from app.models.user import User
 import smtplib
 from email.message import EmailMessage
 
@@ -52,7 +53,10 @@ async def check_upcoming_events():
             msg.set_content(body)
             msg['Subject'] = f"Nhắc nhở sự kiện: {event.title} cho thú cưng {pet.name}"
             msg['From'] = settings.MAIL_FROM
-            msg['To'] = settings.MAIL_TO_ADMIN
+            # Prefer sending reminder to pet owner if available, otherwise fallback to configured admin address
+            recipient = pet.owner_email or settings.MAIL_TO_ADMIN
+            msg['To'] = recipient
+            print(f"Sending reminder to: {recipient}")
 
             # Kết nối tới server và gửi email
             server = smtplib.SMTP(settings.MAIL_SERVER, settings.MAIL_PORT)
@@ -94,14 +98,29 @@ async def check_low_stock_and_notify():
         msg.set_content(body)
         msg['Subject'] = 'Low stock alert — Pet Management'
         msg['From'] = settings.MAIL_FROM
-        msg['To'] = settings.MAIL_TO_ADMIN
+
+        # Send low-stock alerts to all admin users in the database
+        admins = await User.find(User.role == 'admin').to_list()
+        admin_emails = [u.email for u in admins if getattr(u, 'email', None)]
+        if not admin_emails:
+            # Fallback to configured MAIL_TO_ADMIN
+            admin_emails = [settings.MAIL_TO_ADMIN]
+
+        print(f"Sending low-stock alert to admins: {admin_emails}")
 
         server = smtplib.SMTP(settings.MAIL_SERVER, settings.MAIL_PORT)
         if settings.MAIL_STARTTLS:
             server.starttls()
         server.login(settings.MAIL_USERNAME, settings.MAIL_PASSWORD)
-        server.send_message(msg)
+
+        for addr in admin_emails:
+            try:
+                msg['To'] = addr
+                server.send_message(msg)
+            except Exception as e:
+                print(f"Failed to send low-stock email to {addr}: {e}")
+
         server.quit()
-        print('Low-stock email sent to admin.')
+        print('Low-stock email attempts finished.')
     except Exception as e:
         print(f'Error sending low-stock email: {e}')
