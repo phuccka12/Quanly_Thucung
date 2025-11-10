@@ -79,6 +79,43 @@ async def get_upcoming(
         "limit": limit
     }
 
+
+@router.get("/history", response_model=ScheduledEventPaginatedResponse)
+async def get_history(
+    *,
+    skip: int = 0,
+    limit: int = 100,
+    search: Optional[str] = None,
+    current_admin: User = Depends(get_current_admin_user)
+):
+    """
+    Lấy danh sách các sự kiện đã diễn ra (chỉ event_datetime < now). (Chỉ dành cho Admin)
+    """
+    events, total = await crud_scheduled_event.get_past_events_with_count(skip=skip, limit=limit, search=search)
+
+    response_list = []
+    for event in events:
+        pet = await event.pet.fetch()
+        event_data = {
+            "id": event.id,
+            "pet_id": event.pet.ref.id,
+            "pet_name": pet.name if pet else "Unknown Pet",
+            "owner_name": pet.owner_name if pet else "Unknown Owner",
+            "title": event.title,
+            "event_datetime": event.event_datetime,
+            "event_type": event.event_type,
+            "description": event.description,
+            "is_completed": event.is_completed
+        }
+        response_list.append(event_data)
+
+    return {
+        "data": response_list,
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
+
 @router.put("/{event_id}", response_model=ScheduledEventRead)
 async def update_event(
     *,

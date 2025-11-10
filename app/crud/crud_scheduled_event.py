@@ -48,3 +48,27 @@ async def get_upcoming_events_with_count(
     events = await query.sort(+ScheduledEvent.event_datetime).skip(skip).limit(limit).to_list()
     
     return events, total
+
+
+async def get_past_events_with_count(
+    skip: int = 0,
+    limit: int = 100,
+    search: Optional[str] = None
+) -> tuple[List[ScheduledEvent], int]:
+    """
+    Lấy danh sách các sự kiện đã diễn ra (event_datetime < now).
+    Trả về (events, total_count)
+    """
+    now = datetime.now(timezone.utc)
+
+    # Query events strictly in the past
+    query = ScheduledEvent.find(
+        ScheduledEvent.event_datetime < now
+    )
+
+    if search:
+        query = query.find({"title": {"$regex": search, "$options": "i"}})
+
+    total = await query.count()
+    events = await query.sort(-ScheduledEvent.event_datetime).skip(skip).limit(limit).to_list()
+    return events, total

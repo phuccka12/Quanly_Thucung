@@ -49,10 +49,11 @@ export default function ScheduledEvents(){
   })
 
   const [searchQuery, setSearchQuery] = useState('')
+  const [showPast, setShowPast] = useState(false)
 
   useEffect(() => {
     loadEvents()
-  }, [currentPage, searchQuery])
+  }, [currentPage, searchQuery, showPast])
 
   useEffect(() => {
     loadPets()
@@ -68,7 +69,8 @@ export default function ScheduledEvents(){
       })
       if (searchQuery.trim()) params.append('search', searchQuery.trim())
 
-      const url = `${API_BASE_URL}/scheduled-events/upcoming?${params}`
+  const base = showPast ? 'history' : 'upcoming'
+  const url = `${API_BASE_URL}/scheduled-events/${base}?${params}`
       console.log('Loading events from:', url)
       console.log('Search query:', searchQuery)
       console.log('Token present:', !!localStorage.getItem('hiday_pet_token'))
@@ -245,6 +247,16 @@ export default function ScheduledEvents(){
           </button>
         </div>
       </div>
+      <div className="mb-4 flex gap-2">
+        <button
+          onClick={() => { setShowPast(false); setCurrentPage(1); }}
+          className={`px-4 py-2 rounded-xl ${!showPast ? 'bg-indigo-600 text-white' : 'bg-gray-100'}`}
+        >Sắp diễn ra</button>
+        <button
+          onClick={() => { setShowPast(true); setCurrentPage(1); }}
+          className={`px-4 py-2 rounded-xl ${showPast ? 'bg-indigo-600 text-white' : 'bg-gray-100'}`}
+        >Lịch sử</button>
+      </div>
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6">
@@ -323,8 +335,9 @@ export default function ScheduledEvents(){
                   </td>
                 </tr>
               ) : (
-                events.map(event => (
-                  <tr key={event.id} className="hover:bg-gray-50">
+                events.map((event, idx) => (
+                  // ensure each row has a stable unique key; fall back to index if id missing
+                  <tr key={event.id || event._id || `evt-${idx}`} className="hover:bg-gray-50">
                     <td className="px-3 sm:px-6 py-4">
                       <div className="flex items-center">
                         <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-lg flex items-center justify-center text-white font-semibold mr-2 sm:mr-3">
