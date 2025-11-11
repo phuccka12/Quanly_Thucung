@@ -9,6 +9,7 @@ from app.services.scheduler_jobs import check_upcoming_events, check_low_stock_a
 from apscheduler.schedulers.asyncio import AsyncIOScheduler 
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
+from app.api.middleware import AuthMiddleware
 import shutil
 import uuid
 import os
@@ -32,6 +33,8 @@ async def lifespan(app: FastAPI):
     print("Closing database connection and shutting down scheduler.")
 
 app = FastAPI(lifespan=lifespan)
+# Add authentication middleware to populate `request.state.user` from Bearer tokens
+app.add_middleware(AuthMiddleware)
 api_router_v1 = APIRouter(prefix="/api/v1")
 
 # Create uploads directory if it doesn't exist
@@ -51,6 +54,8 @@ api_router_v1.include_router(products.router, prefix="/products", tags=["Product
 api_router_v1.include_router(services.router, prefix="/services", tags=["Services"])
 from app.api.endpoints import reports
 api_router_v1.include_router(reports.router, prefix="/reports", tags=["Reports"])
+from app.api.endpoints import portal
+api_router_v1.include_router(portal.router, prefix="/portal", tags=["Portal"])
 origins = [
     "http://localhost",
     "http://localhost:3000", # Địa chỉ mặc định của React

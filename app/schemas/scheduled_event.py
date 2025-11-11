@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, validator
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 from beanie import PydanticObjectId
 from app.models.scheduled_event import EventType
 import pytz # <-- Thêm pytz
@@ -11,6 +11,9 @@ class ScheduledEventBase(BaseModel):
     event_type: EventType
     description: Optional[str] = None
     is_completed: bool = False
+    # Optional references to service/product (ids)
+    service_id: Optional[PydanticObjectId] = None
+    product_id: Optional[PydanticObjectId] = None
 
     # --- THÊM BỘ VALIDATOR VÀO ĐÂY ---
     @validator('event_datetime', pre=True, always=True)
@@ -35,13 +38,23 @@ class ScheduledEventBase(BaseModel):
 
 # ... (Các class ScheduledEventCreate và ScheduledEventRead giữ nguyên, không cần sửa) ...
 class ScheduledEventCreate(ScheduledEventBase):
-    pass
+    @validator('event_datetime', pre=False, always=True)
+    def ensure_not_in_past(cls, v: datetime) -> datetime:
+        """Reject datetimes in the past (compared to UTC now)."""
+        if v is None:
+            return v
+        now = datetime.now(timezone.utc)
+        if v < now:
+            raise ValueError('event_datetime must be in the future')
+        return v
 
 class ScheduledEventRead(ScheduledEventBase):
     id: PydanticObjectId = Field(..., alias="_id")
     pet_id: PydanticObjectId
     pet_name: str
     owner_name: str
+    service_id: Optional[PydanticObjectId] = None
+    product_id: Optional[PydanticObjectId] = None
 
     class Config:
         from_attributes = True

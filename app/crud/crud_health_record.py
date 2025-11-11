@@ -8,6 +8,9 @@ from app.schemas.health_record import HealthRecordUpdate
 from app.models.product import Product
 from bson import ObjectId
 from app.core.config import settings
+import motor.motor_asyncio
+
+
 async def create_health_record_for_pet(
     pet: Pet, 
     record_in: HealthRecordCreate
@@ -16,7 +19,20 @@ async def create_health_record_for_pet(
     Tạo một bản ghi y tế mới cho một thú cưng cụ thể.
     """
     # Nếu có sản phẩm được sử dụng, cố gắng giảm tồn kho trước khi tạo record.
-    motor_coll = Product.get_motor_collection()
+    # Obtain a motor collection for the Product model. Beanie's API changed across
+    # versions so attempt available helpers then fallback to creating a client.
+    if hasattr(Product, 'get_motor_collection'):
+        motor_coll = Product.get_motor_collection()
+    elif hasattr(Product, 'get_collection'):
+        motor_coll = Product.get_collection()
+    else:
+        client = motor.motor_asyncio.AsyncIOMotorClient(settings.MONGODB_URL)
+        try:
+            coll_name = Product.Settings.name
+        except Exception:
+            coll_name = Product.__name__.lower() + 's'
+        motor_coll = client[settings.DATABASE_NAME][coll_name]
+
     decremented = []  # keep track to rollback if needed
 
     try:
@@ -29,7 +45,7 @@ async def create_health_record_for_pet(
                     {"_id": pid, "stock_quantity": {"$gte": q}},
                     {"$inc": {"stock_quantity": -q}}
                 )
-                if res.modified_count == 0:
+                if getattr(res, 'modified_count', 0) == 0:
                     # Not enough stock or product not found
                     raise ValueError(f"Insufficient stock for product {up.product_id}")
                 decremented.append((pid, q))
@@ -41,7 +57,7 @@ async def create_health_record_for_pet(
         )
         await record.insert()
         return record
-    except Exception as e:
+    except Exception:
         # rollback any decremented stock
         if decremented:
             for pid, q in decremented:
@@ -60,6 +76,17 @@ async def get_health_records_for_pet(pet_id: PydanticObjectId) -> List[HealthRec
     # Tìm tất cả các record có trường 'pet._id' khớp với pet_id
     records = await HealthRecord.find({"pet.$id": pet_id}).to_list()
     return records 
+
+
+async def get_health_records_for_pet_owner(pet_id: PydanticObjectId, owner_email: str) -> List[HealthRecord]:
+    """
+    Lấy health records cho một pet chỉ khi pet thuộc về owner_email.
+    """
+    pet = await Pet.get(pet_id)
+    if not pet or getattr(pet, 'owner_email', None) != owner_email:
+        return []
+    records = await HealthRecord.find({"pet.$id": pet_id}).to_list()
+    return records
 
 async def get_health_record_by_id(record_id: PydanticObjectId) -> Optional[HealthRecord]:
     """

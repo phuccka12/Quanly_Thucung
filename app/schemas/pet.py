@@ -18,7 +18,8 @@ class PetBase(BaseModel):
     avatar_url: Optional[str] = None
     image_url: Optional[str] = None
     
-    owner_name: str = Field(..., max_length=100)
+    # owner fields are populated server-side for portal creates; make optional for incoming requests
+    owner_name: Optional[str] = Field(None, max_length=100)
     owner_email: Optional[str] = Field(None, max_length=100)
     owner_phone: Optional[str] = Field(None, max_length=15)
 

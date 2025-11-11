@@ -77,6 +77,47 @@ async def get_pet_by_id(pet_id: str) -> Optional[Pet]:
     """
     pet = await Pet.get(pet_id)
     return pet
+
+
+async def get_pets_for_owner(
+    owner_email: str,
+    skip: int = 0,
+    limit: int = 100,
+    search: Optional[str] = None
+) -> tuple[List[Pet], int]:
+    """
+    Lấy danh sách thú cưng thuộc về một chủ (owner_email) với phân trang và tìm kiếm.
+    Trả về (pets, total)
+    """
+    query = Pet.find({"owner_email": owner_email})
+    if search:
+        search_regex = {"$regex": search, "$options": "i"}
+        query = Pet.find({"owner_email": owner_email, "$or": [{"name": search_regex}, {"breed": search_regex}]})
+    total = await query.count()
+    pets = await query.skip(skip).limit(limit).to_list()
+    return pets, total
+
+
+async def create_pet_for_owner(owner_email: str, owner_name: str, pet_in: PetCreate) -> Pet:
+    """
+    Tạo pet và gán owner_email/owner_name trước khi lưu.
+    """
+    # Prevent duplicate owner fields if client accidentally included them
+    pet_data = pet_in.dict()
+    pet_data.pop('owner_email', None)
+    pet_data.pop('owner_name', None)
+    pet = Pet(**pet_data, owner_email=owner_email, owner_name=owner_name)
+    await pet.insert()
+    return pet
+
+
+async def get_pet_by_id_for_owner(pet_id: str, owner_email: str) -> Optional[Pet]:
+    pet = await Pet.get(pet_id)
+    if not pet:
+        return None
+    if getattr(pet, 'owner_email', None) != owner_email:
+        return None
+    return pet
 async def update_pet(pet: Pet, pet_in: PetUpdate) -> Pet:
     """
     Cập nhật thông tin một thú cưng.

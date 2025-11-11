@@ -4,16 +4,18 @@ from app.models.user import User, UserRole
 from app.schemas.user import UserCreate
 from app.services.security import get_password_hash
 
-async def create_user(user_in: UserCreate) -> User:
+async def create_user(user_in: UserCreate, role: UserRole = UserRole.USER) -> User:
     """
     Tạo người dùng mới trong database.
+
+    Mặc định role là UserRole.USER để tránh vô tình tạo admin. Gọi hàm với
+    `role=UserRole.ADMIN` khi cần tạo tài khoản admin (ví dụ: helper script).
     """
     user = User(
         email=user_in.email,
         full_name=user_in.full_name,
         hashed_password=get_password_hash(user_in.password),
-        # THAY ĐỔI DUY NHẤT: Tạm thời gán vai trò là ADMIN cho mọi user mới
-        role=UserRole.ADMIN
+        role=role
     )
     await user.insert()
     return user

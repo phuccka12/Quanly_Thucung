@@ -1,4 +1,4 @@
-from beanie import Document, Link
+from beanie import Document, Link, PydanticObjectId
 from pydantic import Field
 from typing import Optional
 from datetime import datetime # Dùng datetime để lưu cả ngày và giờ
@@ -23,5 +23,8 @@ class ScheduledEvent(Document):
     
     is_completed: bool = Field(default=False) # Trạng thái hoàn thành
     reminder_sent: bool = Field(default=False)  # Trạng thái đã gửi nhắc nhở hay chưa
+    # Optional references to a catalog item (service or product)
+    service_id: Optional[PydanticObjectId] = None
+    product_id: Optional[PydanticObjectId] = None
     class Settings:
         name = "scheduled_events"

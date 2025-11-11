@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useContext } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { fetchWithAuth, BASE_URL, API_BASE_URL } from '../api'
-import { useContext } from 'react'
+import { BASE_URL } from '../api'
 import { ToastContext } from './ToastProvider'
+import { AuthContext } from '../AuthContext'
 import { useRef } from 'react'
 
 export default function Topbar(){
@@ -18,8 +18,8 @@ export default function Topbar(){
     }
   }, [])
 
-  // Load current user for avatar display
-  const [user, setUser] = useState(null)
+  // use current user from AuthContext
+  const { user, loading, logout } = useContext(AuthContext)
   const { unread, markAllRead, notifications, markRead, clearNotification } = useContext(ToastContext)
   const [showNotifications, setShowNotifications] = useState(false)
   const [query, setQuery] = useState('')
@@ -46,23 +46,7 @@ export default function Topbar(){
     if (showSearchResults) window.addEventListener('click', onDoc)
     return ()=> window.removeEventListener('click', onDoc)
   }, [showSearchResults])
-  useEffect(()=>{
-    let mounted = true
-    const loadUser = async ()=>{
-      try{
-        const u = await fetchWithAuth(`${API_BASE_URL}/users/me`)
-        if (!mounted) return
-        setUser(u)
-      }catch(e){
-        // ignore (not logged in)
-        setUser(null)
-      }
-    }
-    loadUser()
-    const onToken = ()=> loadUser()
-    window.addEventListener('tokenChanged', onToken)
-    return ()=>{ mounted = false; window.removeEventListener('tokenChanged', onToken) }
-  }, [])
+  // AuthContext will refresh user on tokenChanged; no local fetch needed
 
   const resolveAvatarUrl = (u)=>{
     if (!u) return null
@@ -157,10 +141,15 @@ export default function Topbar(){
   }
 
   const handleLogout = () => {
-    localStorage.removeItem('hiday_pet_token')
-    localStorage.removeItem('hiday_pet_saved_email')
-    window.dispatchEvent(new Event('tokenChanged'))
-    navigate('/login')
+    // use AuthContext logout if available, otherwise fallback
+    if (typeof logout === 'function') {
+      logout()
+    } else {
+      localStorage.removeItem('hiday_pet_token')
+      localStorage.removeItem('hiday_pet_saved_email')
+      window.dispatchEvent(new Event('tokenChanged'))
+      navigate('/login')
+    }
   }
 
   return (

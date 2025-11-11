@@ -52,7 +52,22 @@ export default function Login(){
       if (remember) localStorage.setItem('hiday_pet_saved_email', email)
       else localStorage.removeItem('hiday_pet_saved_email')
       window.dispatchEvent(new Event('tokenChanged'))
-      navigate('/dashboard')
+      // fetch profile and redirect according to role (admin -> /dashboard, user -> /portal)
+      try {
+        const profRes = await fetch(`${API_BASE_URL}/users/me`, {
+          headers: { Authorization: `Bearer ${data.access_token}` }
+        })
+        if (profRes.ok) {
+          const profile = await profRes.json()
+          if (profile.role && profile.role === 'admin') navigate('/dashboard')
+          else navigate('/portal')
+        } else {
+          // fallback
+          navigate('/dashboard')
+        }
+      } catch (e) {
+        navigate('/dashboard')
+      }
     } catch (err) {
       setError(err.message)
     } finally {
@@ -145,6 +160,10 @@ export default function Login(){
                 Bằng việc tiếp tục, bạn đồng ý với <a className="underline hover:text-gray-700" href="#">Điều khoản</a> & <a className="underline hover:text-gray-700" href="#">Chính sách</a>
               </div>
             </form>
+
+            <div className="mt-4 text-center text-sm">
+              <p className="text-gray-600">Chưa có tài khoản? <button type="button" onClick={()=> navigate('/register')} className="text-indigo-600 underline">Đăng ký</button></p>
+            </div>
 
             <div className="mt-6 text-center text-sm text-gray-500">
               <p>© {new Date().getFullYear()} HIDAY PET - Hệ thống quản lý thú cưng</p>

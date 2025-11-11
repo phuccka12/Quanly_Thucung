@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import List
-from app.models.user import User
 from typing import Optional
+from app.models.user import UserRole
 import pydantic
 from pydantic import BaseModel, EmailStr, Field
 
@@ -23,6 +23,8 @@ class UserRead(BaseModel):
     id: str = Field(..., alias="_id")  # Beanie/MongoDB dùng _id
     email: EmailStr
     full_name: Optional[str] = None
+    # include role in responses so clients (frontend) can make routing/ACL decisions
+    role: UserRole
     avatar_url: Optional[str] = None
     is_active: bool
 

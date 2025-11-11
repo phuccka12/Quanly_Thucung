@@ -27,9 +27,11 @@ async def main():
     pw = getpass.getpass('Password (will be hidden): ')
 
     from app.schemas.user import UserCreate
+    from app.models.user import UserRole
 
     user_in = UserCreate(email=email, password=pw, full_name='Admin')
-    created = await crud_user.create_user(user_in=user_in)
+    # explicitly request ADMIN role for this helper script
+    created = await crud_user.create_user(user_in=user_in, role=UserRole.ADMIN)
     print('Created user:', created.email, 'role=', created.role)
 
 

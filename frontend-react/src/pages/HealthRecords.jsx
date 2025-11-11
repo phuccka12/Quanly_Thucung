@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useContext } from 'react'
 import { fetchWithAuth, API_BASE_URL } from '../api'
+import { AuthContext } from '../AuthContext'
 
 const Skeleton = ({className=''}) => (
   <div className={`animate-pulse rounded bg-gray-100 ${className}`} />
@@ -93,6 +94,9 @@ export default function HealthRecords(){
     }
   }, [])
 
+  const { user } = useContext(AuthContext)
+  const isAdmin = user && user.role && (user.role === 'admin' || user.role === 'ADMIN')
+
   useEffect(() => {
     const token = localStorage.getItem('hiday_pet_token')
     if (token && selectedPet) {
@@ -154,7 +158,10 @@ export default function HealthRecords(){
   const loadRecordsForPet = async (petId) => {
     setLoading(true)
     try {
-      const response = await fetchWithAuth(`${API_BASE_URL}/health-records/for-pet/${petId}`)
+      const url = isAdmin
+        ? `${API_BASE_URL}/health-records/for-pet/${petId}`
+        : `${API_BASE_URL}/portal/pets/${petId}/health-records`
+      const response = await fetchWithAuth(url)
       console.debug('loadRecordsForPet response:', response)
       // backend may return an array directly or an object with `data`.
       let raw = []
@@ -196,8 +203,8 @@ export default function HealthRecords(){
 
     try {
       const url = editingRecord
-        ? `${API_BASE_URL}/health-records/${editingRecord.id}`
-        : `${API_BASE_URL}/health-records/for-pet/${selectedPet}`
+        ? (isAdmin ? `${API_BASE_URL}/health-records/${editingRecord.id}` : `${API_BASE_URL}/portal/health-records/${editingRecord.id}`)
+        : (isAdmin ? `${API_BASE_URL}/health-records/for-pet/${selectedPet}` : `${API_BASE_URL}/portal/pets/${selectedPet}/health-records`)
       const method = editingRecord ? 'PUT' : 'POST'
 
       // Prepare payload: strip empty strings, convert numbers, and validate used items
@@ -281,7 +288,8 @@ export default function HealthRecords(){
     if (!confirm('Bạn có chắc muốn xóa hồ sơ y tế này?')) return
 
     try {
-      await fetchWithAuth(`${API_BASE_URL}/health-records/${recordId}`, {
+      const delUrl = isAdmin ? `${API_BASE_URL}/health-records/${recordId}` : `${API_BASE_URL}/portal/health-records/${recordId}`
+      await fetchWithAuth(delUrl, {
         method: 'DELETE'
       })
 
