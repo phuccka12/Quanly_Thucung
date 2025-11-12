@@ -140,9 +140,9 @@ export default function PortalPets(){
             <div className="grid grid-cols-2 gap-3">
               <select value={form.gender} onChange={(e)=> setForm({...form, gender: e.target.value})} className="p-2 border rounded">
                 <option value="">Giới tính</option>
-                <option value="Đực">Đực</option>
-                <option value="Cái">Cái</option>
-                <option value="Không rõ">Không rõ</option>
+                <option value="male">Đực</option>
+                <option value="female">Cái</option>
+                <option value="unknown">Không rõ</option>
               </select>
               <input type="date" value={form.date_of_birth} onChange={(e)=> setForm({...form, date_of_birth: e.target.value})} className="p-2 border rounded" />
             </div>

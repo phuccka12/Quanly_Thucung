@@ -18,12 +18,15 @@ export default function PortalPetDetail() {
   const navigate = useNavigate()
   const [pet, setPet] = useState(null)
   const [events, setEvents] = useState([])
+  const [supportPhone, setSupportPhone] = useState(null)
   const [records, setRecords] = useState([])
   const [showRecordModal, setShowRecordModal] = useState(false)
   const [recordForm, setRecordForm] = useState({ record_type: 'vet_visit', date: new Date().toISOString().split('T')[0], description: '', notes: '', weight_kg: '', next_due_date: '', used_products: [], used_services: [] })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [editing, setEditing] = useState(false)
+  const [eventCancelErrors, setEventCancelErrors] = useState({})
+  const [eventCancelling, setEventCancelling] = useState({})
   const [activeTab, setActiveTab] = useState('overview')
   const [form, setForm] = useState({ name: '', species: '', breed: '', age: '', weight: '', image_url: '' })
   const [newEvent, setNewEvent] = useState({ title: '', event_datetime: '', event_type: 'appointment', description: '' })
@@ -139,6 +142,13 @@ export default function PortalPetDetail() {
         window.__portalServices = svcList || []
       } catch (e) {
         window.__portalServices = []
+      }
+      // fetch site meta (support phone, cancel window)
+      try {
+        const meta = await fetchWithAuth('/meta')
+        setSupportPhone(meta?.support_phone || null)
+      } catch (e) {
+        setSupportPhone(null)
       }
     } catch (e) { console.error(e); setError('Không tải được dữ liệu') }
     setLoading(false)
@@ -265,18 +275,15 @@ export default function PortalPetDetail() {
                 <form onSubmit={async (e) => { e.preventDefault();
                     try{
                       const payload = { ...newEvent }
-                      // Convert datetime-local (YYYY-MM-DDTHH:MM) into an explicit UTC ISO string
-                      // treating the input as Vietnam time (UTC+7). This avoids client TZ surprises.
-                      // If the input is a naive datetime-local (no timezone), treat it as Vietnam time (GMT+7).
-                      // Instead of doing manual math (which can cause off-by-offset issues), append an explicit
-                      // "+07:00" offset so the server can parse and convert to UTC reliably.
                       if (payload.event_datetime && !/([Zz]|[+\-]\d{2}:\d{2})$/.test(payload.event_datetime)) {
                         payload.event_datetime = `${payload.event_datetime}:00+07:00`
                       }
                       await fetchWithAuth(`/portal/pets/${id}/scheduled-events`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) })
-                      // reload events
+                      // reload events (normalize ids to ensure unique React keys)
                       const evs = await fetchWithAuth('/portal/scheduled-events')
-                      setEvents((evs || []).filter(e => String(e.pet_id) === String(id)))
+                      const rawList = Array.isArray(evs) ? evs : (evs && Array.isArray(evs.data) ? evs.data : [])
+                      const normalizedList = rawList.map(ev => ({ ...ev, id: ev.id || ev._id || (ev._id && (ev._id.$oid || ev._id['$oid'])) }))
+                      setEvents(normalizedList.filter(e => String(e.pet_id) === String(id)))
                       setNewEvent({ title: '', event_datetime: '', event_type: 'appointment', description: '' })
                       try{ window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Đã đặt lịch thành công', type:'create' } })) }catch(e){}
                     }catch(err){ console.error(err); setError('Đặt lịch thất bại') }
@@ -304,7 +311,7 @@ export default function PortalPetDetail() {
               {events.length === 0 ? <div className="text-gray-500">Không có lịch hẹn</div> : (
                 <ul className="space-y-4">
                   {events.map(ev => (
-                    <li key={ev.id} className="p-4 border rounded-lg flex items-start justify-between hover:shadow-md transition-all">
+                    <li key={ev.id || ev._id || (ev._id && (ev._id.$oid || ev._id['$oid']))} className="p-4 border rounded-lg flex items-start justify-between hover:shadow-md transition-all">
                       <div>
                         <div className="font-semibold text-gray-800">{ev.title}</div>
                         <div className="text-sm text-gray-600">{ev.description}</div>
@@ -312,19 +319,76 @@ export default function PortalPetDetail() {
                       </div>
                       <div className="flex items-center gap-3">
                         <div className="text-sm text-gray-500">{ev.event_type}</div>
-                        <button onClick={async ()=>{
-                          if (!confirm('Bạn có chắc muốn huỷ lịch hẹn này?')) return
-                          try{
+                        <div>
+                          {(() => {
+                            // Compute cancellability: >24 hours => allowed; <=24h => disallowed; past => disallowed
+                            const now = new Date()
+                            const evDt = ev.event_datetime ? new Date(ev.event_datetime) : null
+                            const msUntil = evDt ? (evDt.getTime() - now.getTime()) : -1
+                            const CANCEL_WINDOW_MS = 24 * 60 * 60 * 1000
+                            const isPast = msUntil <= 0
+                            const withinWindow = msUntil > 0 && msUntil < CANCEL_WINDOW_MS
+                            const cancellable = evDt && msUntil > CANCEL_WINDOW_MS
+                            // consider "same-day" events as those that fall on the same VN calendar date as now
+                            const nowLocal = new Date()
+                            const evLocal = evDt ? new Date(evDt) : null
+                            const toVNDate = (d) => d.toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })
+                            const isSameDay = evLocal ? (toVNDate(evLocal) === toVNDate(nowLocal)) : false
+
                             const eid = ev.id || ev._id || (ev._id && (ev._id.$oid || ev._id['$oid']))
-                            await fetchWithAuth(`/portal/scheduled-events/${eid}`, { method: 'DELETE' })
-                            // reload events
-                            const evsRaw2 = await fetchWithAuth('/portal/scheduled-events')
-                            const rawList2 = Array.isArray(evsRaw2) ? evsRaw2 : (evsRaw2 && Array.isArray(evsRaw2.data) ? evsRaw2.data : [])
-                            const normalized2 = rawList2.map(ev => ({ ...ev, id: ev.id || ev._id || (ev._id && (ev._id.$oid || ev._id['$oid'])) }))
-                            setEvents(normalized2.filter(e => String(e.pet_id) === String(id)))
-                            try{ window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Lịch hẹn đã được huỷ', type:'delete' } })) }catch(e){}
-                          }catch(err){ console.error(err); setError('Huỷ lịch thất bại') }
-                        }} className="px-3 py-1 bg-red-600 text-white rounded">Huỷ</button>
+
+                            if (!cancellable) {
+                              // disabled state + guidance for within 24h or same-day
+                              return (
+                                <div className="text-right">
+                                  <button disabled className="px-3 py-1 rounded bg-gray-200 text-gray-500">Huỷ</button>
+                                  { isPast && !isSameDay ? (
+                                    // truly past (other day) -> simple message
+                                    <div className="mt-2 text-sm text-gray-500">Sự kiện sắp diễn ra không thể huỷ.</div>
+                                  ) : (
+                                    // either withinWindow or same-day -> show contact guidance
+                                    <div className="mt-2 text-sm text-red-600">
+                                      <div>Không thể huỷ trong vòng 24 giờ.</div>
+                                      { supportPhone ? (
+                                        <div className="mt-2 flex items-center gap-3">
+                                          <div>Vui lòng liên hệ CSKH: <strong>{supportPhone}</strong></div>
+                                          <button type="button" onClick={() => { try { navigator.clipboard && navigator.clipboard.writeText(supportPhone); window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Số hotline đã được sao chép', type: 'info' } })); } catch (e) { /* ignore */ } }} className="px-3 py-1 border rounded">Sao chép</button>
+                                        </div>
+                                      ) : (
+                                        <div className="mt-2 flex items-center gap-3">
+                                          <div>Vui lòng liên hệ CSKH để được hỗ trợ.</div>
+                                          <button type="button" onClick={() => { alert('Số hotline chưa được cấu hình. Vui lòng truy cập trang Liên hệ hoặc liên hệ qua email hỗ trợ.'); }} className="px-3 py-1 bg-indigo-600 text-white rounded">Liên hệ</button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              )
+                            }
+
+                            // cancellable -> show active button
+                            return (
+                              <div>
+                                <button onClick={async ()=>{
+                                  if (!confirm('Bạn có chắc muốn huỷ lịch hẹn này?')) return
+                                  setEventCancelErrors(prev => ({...prev, [eid]: null}))
+                                  setEventCancelling(prev => ({...prev, [eid]: true}))
+                                  try{
+                                    await fetchWithAuth(`/portal/scheduled-events/${eid}`, { method: 'DELETE' })
+                                    // reload events
+                                    const evsRaw2 = await fetchWithAuth('/portal/scheduled-events')
+                                    const rawList2 = Array.isArray(evsRaw2) ? evsRaw2 : (evsRaw2 && Array.isArray(evsRaw2.data) ? evsRaw2.data : [])
+                                    const normalized2 = rawList2.map(ev => ({ ...ev, id: ev.id || ev._id || (ev._id && (ev._id.$oid || ev._id['$oid'])) }))
+                                    setEvents(normalized2.filter(e => String(e.pet_id) === String(id)))
+                                    try{ window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Lịch hẹn đã được huỷ', type:'delete' } })) }catch(e){}
+                                  }catch(err){ console.error(err); const msg = err?.body || err?.message || 'Huỷ lịch thất bại'; setEventCancelErrors(prev=>({...prev, [eid]: msg})) }
+                                  finally { setEventCancelling(prev => ({...prev, [eid]: false})) }
+                                }} className={`px-3 py-1 rounded ${eventCancelling[eid] ? 'bg-yellow-400 text-white' : 'bg-red-600 text-white'} hover:opacity-95`}>{eventCancelling[eid] ? 'Đang huỷ...' : 'Huỷ'}</button>
+                                { eventCancelErrors[eid] && <div className="text-sm text-red-600 mt-2">{eventCancelErrors[eid]}</div> }
+                              </div>
+                            )
+                          })()}
+                        </div>
                       </div>
                     </li>
                   ))}

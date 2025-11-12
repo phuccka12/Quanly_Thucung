@@ -69,6 +69,18 @@ export default function Sidebar(){
                   Báo cáo
                 </NavLink>
               </li>
+              <li>
+                <NavLink to="/users" className={({isActive})=> `flex items-center p-4 rounded-xl transition-all duration-200 ${isActive ? 'bg-gradient-to-r from-indigo-500 to-indigo-700 text-white shadow-lg' : 'text-gray-600 hover:bg-white hover:shadow-md hover:text-indigo-600'}`}>
+                  <i className="fas fa-users mr-3 text-lg"/>
+                  Người dùng
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/orders" className={({isActive})=> `flex items-center p-4 rounded-xl transition-all duration-200 ${isActive ? 'bg-gradient-to-r from-indigo-500 to-indigo-700 text-white shadow-lg' : 'text-gray-600 hover:bg-white hover:shadow-md hover:text-indigo-600'}`}>
+                  <i className="fas fa-receipt mr-3 text-lg"/>
+                  Đơn hàng
+                </NavLink>
+              </li>
             </>
           ) : (
             <>
@@ -88,6 +100,12 @@ export default function Sidebar(){
                 <NavLink to="/portal/products" className={({isActive})=> `flex items-center p-4 rounded-xl transition-all duration-200 ${isActive ? 'bg-gradient-to-r from-indigo-500 to-indigo-700 text-white shadow-lg' : 'text-gray-600 hover:bg-white hover:shadow-md hover:text-indigo-600'}`}>
                   <i className="fas fa-boxes mr-3 text-lg"/>
                   Sản phẩm
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/portal/orders" className={({isActive})=> `flex items-center p-4 rounded-xl transition-all duration-200 ${isActive ? 'bg-gradient-to-r from-indigo-500 to-indigo-700 text-white shadow-lg' : 'text-gray-600 hover:bg-white hover:shadow-md hover:text-indigo-600'}`}>
+                  <i className="fas fa-receipt mr-3 text-lg"/>
+                  Đơn hàng
                 </NavLink>
               </li>
               <li>

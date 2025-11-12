@@ -1,11 +1,13 @@
 from fastapi import APIRouter, HTTPException, Depends, status
-from app.schemas.user import UserCreate, UserRead, UserUpdate  # Schemas từ thư mục schemas
+from typing import List, Optional
+from app.schemas.user import UserCreate, UserRead, UserUpdate, AdminUserUpdate  # Schemas từ thư mục schemas
 from app.models.user import User                   # Model từ thư mục models
 from app.crud import crud_user                     # CRUD functions từ thư mục crud
 from app.api.deps import get_current_user, get_current_admin_user # Dependency từ file deps
 from app.services.security import get_password_hash
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.errors import DuplicateKeyError
+from beanie import PydanticObjectId
 router = APIRouter()
 @router.post("/register", response_model=UserRead)
 async def register_new_user(user_in: UserCreate):
@@ -48,3 +50,54 @@ async def update_users_me(
     await current_user.save()
 
     return current_user
+
+
+# ---------------------- Admin endpoints ----------------------
+
+
+@router.get("/", response_model=List[UserRead])
+async def list_users(skip: int = 0, limit: int = 50, search: Optional[str] = None, current_user: User = Depends(get_current_admin_user)):
+    """List users for admin (paginated)."""
+    if search:
+        q = {"$or": [{"email": {"$regex": search, "$options": "i"}}, {"full_name": {"$regex": search, "$options": "i"}}]}
+        users = await User.find(q).skip(skip).limit(limit).to_list()
+    else:
+        users = await User.find_all().skip(skip).limit(limit).to_list()
+    return users
+
+
+@router.get("/{user_id}", response_model=UserRead)
+async def get_user_by_id(user_id: PydanticObjectId, current_user: User = Depends(get_current_admin_user)):
+    u = await User.get(user_id)
+    if not u:
+        raise HTTPException(status_code=404, detail="User not found")
+    return u
+
+
+@router.put("/{user_id}", response_model=UserRead)
+async def admin_update_user(user_id: PydanticObjectId, user_in: AdminUserUpdate, current_user: User = Depends(get_current_admin_user)):
+    u = await User.get(user_id)
+    if not u:
+        raise HTTPException(status_code=404, detail="User not found")
+    data = user_in.dict(exclude_unset=True)
+    if 'full_name' in data:
+        u.full_name = data['full_name']
+    if 'password' in data and data.get('password'):
+        u.hashed_password = get_password_hash(data['password'])
+    if 'avatar_url' in data:
+        u.avatar_url = data.get('avatar_url')
+    if 'role' in data and data.get('role') is not None:
+        u.role = data.get('role')
+    if 'is_active' in data and data.get('is_active') is not None:
+        u.is_active = data.get('is_active')
+    await u.save()
+    return u
+
+
+@router.delete("/{user_id}")
+async def admin_delete_user(user_id: PydanticObjectId, current_user: User = Depends(get_current_admin_user)):
+    u = await User.get(user_id)
+    if not u:
+        raise HTTPException(status_code=404, detail="User not found")
+    await u.delete()
+    return {"ok": True}

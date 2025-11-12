@@ -63,3 +63,12 @@ class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     password: Optional[str] = None
     avatar_url: Optional[str] = None
+
+
+# Schema dành cho admin khi cập nhật user (role / is_active)
+class AdminUserUpdate(BaseModel):
+    full_name: Optional[str] = None
+    password: Optional[str] = None
+    avatar_url: Optional[str] = None
+    role: Optional[UserRole] = None
+    is_active: Optional[bool] = None

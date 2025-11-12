@@ -5,6 +5,9 @@ from contextlib import asynccontextmanager
 from app.db.database import init_db
 from app.api.endpoints import users
 from app.api.endpoints import login ,pets ,health_records,scheduled_events,dashboard,products,services
+from app.api.endpoints import order
+from app.api.endpoints import debug
+from app.api.endpoints import meta
 from app.services.scheduler_jobs import check_upcoming_events, check_low_stock_and_notify
 from apscheduler.schedulers.asyncio import AsyncIOScheduler 
 from fastapi.middleware.cors import CORSMiddleware
@@ -52,10 +55,17 @@ api_router_v1.include_router(scheduled_events.router, prefix="/scheduled-events"
 api_router_v1.include_router(dashboard.router, prefix="/dashboard", tags=["Dashboard"])
 api_router_v1.include_router(products.router, prefix="/products", tags=["Products"])
 api_router_v1.include_router(services.router, prefix="/services", tags=["Services"])
+api_router_v1.include_router(order.router)
+from app.api.endpoints import carts
+api_router_v1.include_router(carts.router, prefix="/carts", tags=["Carts"])
+api_router_v1.include_router(debug.router, prefix="/debug", tags=["Debug"])
+api_router_v1.include_router(meta.router, prefix="/meta", tags=["Meta"])
 from app.api.endpoints import reports
 api_router_v1.include_router(reports.router, prefix="/reports", tags=["Reports"])
 from app.api.endpoints import portal
 api_router_v1.include_router(portal.router, prefix="/portal", tags=["Portal"])
+from app.api.endpoints import admin_orders
+api_router_v1.include_router(admin_orders.router, prefix="/orders", tags=["Orders"])
 origins = [
     "http://localhost",
     "http://localhost:3000", # Địa chỉ mặc định của React

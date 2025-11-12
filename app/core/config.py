@@ -17,6 +17,10 @@ class Settings(BaseSettings):
     MAIL_TO_ADMIN: str
     # Ngưỡng tồn kho thấp để gửi cảnh báo
     LOW_STOCK_THRESHOLD: int = 5
+    # Cancellation window in hours for scheduled events
+    CANCEL_WINDOW_HOURS: int = 24
+    # Customer support phone number shown in cancellation guidance
+    SUPPORT_PHONE: str | None = None
 
     class Config:
         env_file = ".env"

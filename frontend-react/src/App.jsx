@@ -7,6 +7,8 @@ import Services from './pages/Services'
 import ScheduledEvents from './pages/ScheduledEvents'
 import HealthRecords from './pages/HealthRecords'
 import Reports from './pages/Reports'
+import Users from './pages/Users'
+import AdminOrders from './pages/AdminOrders'
 import Profile from './pages/Profile'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -18,7 +20,7 @@ import PortalServices from './pages/PortalServices'
 import Sidebar from './components/Sidebar'
 import Topbar from './components/Topbar'
 import { AuthProvider, AuthContext } from './AuthContext'
-
+import PortalOrders from './pages/PortalOrders'
 function RequireAdmin({ children }){
   const { user, loading } = useContext(AuthContext)
   // If still loading user profile, don't redirect yet (prevent race conditions)
@@ -68,7 +70,12 @@ function AppInner(){
                 <Route path="/scheduled-events" element={<ScheduledEvents/>} />
                 <Route path="/health-records" element={<HealthRecords/>} />
                 <Route path="/reports" element={<RequireAdmin><Reports/></RequireAdmin>} />
+                <Route path="/users" element={<RequireAdmin><Users/></RequireAdmin>} />
+                <Route path="/orders" element={<RequireAdmin><AdminOrders/></RequireAdmin>} />
                 <Route path="/profile" element={<Profile/>} />
+                <Route path="/portal/orders" element={<PortalOrders />} />
+                {/* Catch-all for logged-in users: redirect unknown paths (e.g. visiting /login while already logged in) to dashboard */}
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
               </Routes>
             </main>
           </div>

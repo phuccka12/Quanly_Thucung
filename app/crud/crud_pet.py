@@ -28,13 +28,14 @@ async def get_all_pets(
     # Nếu có tham số search, thêm điều kiện lọc vào câu truy vấn
     if search:
         # Sử dụng regex để tìm kiếm không phân biệt hoa thường
-        # Tìm trong cả trường 'name' của thú cưng và 'owner_name' của chủ
+        # Sử dụng regex để tìm kiếm không phân biệt hoa thường
+        # Tìm theo 'owner_name' (tên chủ nuôi) hoặc 'species' (loài)
         search_regex = {"$regex": search, "$options": "i"}
         query = Pet.find(
             {
                 "$or": [
-                    {"name": search_regex},
                     {"owner_name": search_regex},
+                    {"species": search_regex},
                 ]
             }
         )
@@ -53,12 +54,13 @@ async def get_all_pets_with_count(
     query = Pet.find_all()
     
     if search:
+        # Search by owner name or species (loài)
         search_regex = {"$regex": search, "$options": "i"}
         query = Pet.find(
             {
                 "$or": [
-                    {"name": search_regex},
                     {"owner_name": search_regex},
+                    {"species": search_regex},
                 ]
             }
         )

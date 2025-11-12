@@ -37,7 +37,7 @@ export default function Products(){
   const [editingProduct, setEditingProduct] = useState(null)
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize] = useState(10) // Số items per page
+  const [pageSize] = useState(10) // items per page
 
   const [formData, setFormData] = useState({
     name: '',
@@ -76,11 +76,6 @@ export default function Products(){
       if (search) params.append('search', search)
 
       const response = await fetchWithAuth(`${API_BASE_URL}/products/paginated?${params}`)
-      console.log('loadProducts response:', response)
-      console.log('products data:', response.data)
-      if (response.data && response.data.length > 0) {
-        console.log('first product:', response.data[0], 'id:', response.data[0].id, 'type:', typeof response.data[0].id)
-      }
       setProducts(response.data || [])
       setTotal(response.total || 0)
     } catch (e) {
@@ -106,7 +101,7 @@ export default function Products(){
         : `${API_BASE_URL}/products`
       const method = editingProduct ? 'PUT' : 'POST'
 
-      const data = await fetchWithAuth(url, {
+      await fetchWithAuth(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -120,7 +115,7 @@ export default function Products(){
       setShowAddModal(false)
       setEditingProduct(null)
       resetForm()
-  try{ window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Sản phẩm đã được lưu', type: 'update' } })) }catch(e){}
+      try{ window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Sản phẩm đã được lưu', type: 'update' } })) }catch(e){}
     } catch (e) {
       setError('Không thể lưu sản phẩm')
       console.error('save product', e)
@@ -143,15 +138,12 @@ export default function Products(){
 
   const handleDelete = async (productId) => {
     const idStr = String(productId)
-    console.log('handleDelete called with productId:', productId, 'type:', typeof productId, 'stringified:', idStr)
     if (!confirm('Bạn có chắc muốn xóa sản phẩm này?')) return
 
     try {
-      await fetchWithAuth(`${API_BASE_URL}/products/${idStr}`, {
-        method: 'DELETE'
-      })
+      await fetchWithAuth(`${API_BASE_URL}/products/${idStr}`, { method: 'DELETE' })
       await loadProducts()
-  try{ window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Đã xóa sản phẩm', type: 'delete' } })) }catch(e){}
+      try{ window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Đã xóa sản phẩm', type: 'delete' } })) }catch(e){}
     } catch (e) {
       setError('Không thể xóa sản phẩm')
       console.error('delete product', e)
@@ -178,7 +170,7 @@ export default function Products(){
 
   const handleSearch = (e) => {
     setSearch(e.target.value)
-    setCurrentPage(1) // Reset về trang 1 khi search
+    setCurrentPage(1)
   }
 
   const handlePageChange = (page) => {

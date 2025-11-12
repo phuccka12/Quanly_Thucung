@@ -7,6 +7,8 @@ from app.models.health_record import HealthRecord  # Chúng ta sẽ tạo file n
 from app.models.scheduled_event import ScheduledEvent
 from app.models.product import Product
 from app.models.service import Service
+from app.models.order import Order
+from app.models.cart import Cart
 async def init_db():
     # Tạo client kết nối tới MongoDB
     client = motor.motor_asyncio.AsyncIOMotorClient(settings.MONGODB_URL)
@@ -22,5 +24,7 @@ async def init_db():
             ScheduledEvent,
             Product,
             Service
+            ,Order,
+            Cart
         ]
     )

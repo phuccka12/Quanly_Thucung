@@ -407,11 +407,12 @@ export default function HealthRecords(){
           <table className="w-full min-w-[600px]">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Loại</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mô tả</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
-              </tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Loại</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chủ</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mô tả</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
+                </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
@@ -439,6 +440,15 @@ export default function HealthRecords(){
                       <Badge tone={getRecordTypeColor(record.record_type)}>
                         {getRecordTypeLabel(record.record_type)}
                       </Badge>
+                    </td>
+                    <td className="px-6 py-4">
+                      {/* Owner: try to resolve from pets list or fallback to pet_id */}
+                      <div className="text-sm text-gray-900">
+                        {(() => {
+                          const pet = pets.find(p => (p.id || p._id || (p._id && (p._id.$oid || p._id['$oid']))) === (record.pet_id || record.pet))
+                          return pet ? (pet.owner_name || pet.owner_email || '-') : (record.owner_name || '-');
+                        })()}
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-gray-900 max-w-xs truncate">{record.description}</div>

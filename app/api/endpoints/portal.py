@@ -143,7 +143,12 @@ async def get_my_scheduled_events(current_user: User = Depends(get_current_user)
 
 @router.delete('/scheduled-events/{event_id}', status_code=status.HTTP_204_NO_CONTENT)
 async def delete_my_scheduled_event(event_id: PydanticObjectId, current_user: User = Depends(get_current_user)):
-    """Allow pet owners to delete (cancel) a scheduled event that belongs to one of their pets."""
+    """Allow pet owners to delete (cancel) a scheduled event that belongs to one of their pets.
+
+    Cancellation policy (Lai logic):
+    - If the event is more than 24 hours in the future, allow user to cancel immediately.
+    - If the event is within 24 hours, disallow self-cancellation and instruct the user to call support.
+    """
     event = await ScheduledEvent.get(event_id)
     if not event:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Event not found')
@@ -167,6 +172,27 @@ async def delete_my_scheduled_event(event_id: PydanticObjectId, current_user: Us
     pet = await crud_pet.get_pet_by_id_for_owner(pet_id=str(pet_id_val), owner_email=current_user.email)
     if not pet:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Event not found')
+
+    # Enforce Lai cancellation rule: allow if >24 hours away
+    from datetime import datetime, timedelta
+
+    try:
+        event_dt = event.event_datetime
+        now = datetime.utcnow()
+        delta = event_dt - now
+        # if event datetime is naive but represents UTC, this works; else consider normalizing at creation
+        if delta.total_seconds() < 0:
+            # past events cannot be cancelled
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Cannot cancel past events')
+        if delta < timedelta(hours=6):
+            # within 6 hours -> disallow self-cancel
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                                detail='Sự kiện sắp diễn ra (trong vòng 6 giờ). Vui lòng gọi số hỗ trợ để hủy.')
+    except HTTPException:
+        raise
+    except Exception:
+        # If anything goes wrong when parsing dates, be conservative and disallow
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Không thể hủy sự kiện này hiện tại. Vui lòng liên hệ hỗ trợ.')
 
     await event.delete()
     return None

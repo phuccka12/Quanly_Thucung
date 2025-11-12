@@ -1,5 +1,26 @@
 import React, { useEffect, useState } from 'react'
 import { fetchWithAuth, API_BASE_URL } from '../api'
+import { Line } from 'react-chartjs-2'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js'
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+)
 
 const Skeleton = ({className=''}) => (
   <div className={`animate-pulse rounded bg-gray-100 ${className}`} />
@@ -33,17 +54,19 @@ export default function Reports(){
   const [error, setError] = useState(null)
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
+  const [groupBy, setGroupBy] = useState('day')
 
   useEffect(() => {
     loadReport()
-  }, [startDate, endDate])
+  }, [startDate, endDate, groupBy])
 
   const loadReport = async () => {
     setLoading(true)
     try {
-      const params = new URLSearchParams()
+  const params = new URLSearchParams()
       if (startDate) params.append('start_date', new Date(startDate).toISOString())
       if (endDate) params.append('end_date', new Date(endDate).toISOString())
+  if (groupBy) params.append('group_by', groupBy)
 
       const data = await fetchWithAuth(`${API_BASE_URL}/reports/revenue?${params}`)
       setReportData(data)
@@ -148,32 +171,115 @@ export default function Reports(){
       )}
 
       {/* Filters */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-6">
-        <div className="flex flex-col sm:flex-row gap-4 items-end">
-          <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Từ ngày</label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
+  <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-6">
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
+          {/* Preset buttons */}
+          <div className="flex gap-2 mb-3 sm:mb-0 sm:mr-2">
+            <button
+              onClick={() => {
+                // Today (local)
+                const now = new Date()
+                const s = new Date(now)
+                s.setHours(0,0,0,0)
+                const e = new Date(now)
+                e.setHours(23,59,59,999)
+                setStartDate(s.toISOString().split('T')[0])
+                setEndDate(e.toISOString().split('T')[0])
+              }}
+              className="px-3 py-2 bg-indigo-50 text-indigo-700 rounded-xl border border-indigo-100 hover:bg-indigo-100"
+            >Hôm nay</button>
+
+            <button
+              onClick={() => {
+                // This week (Monday - Sunday, local)
+                const now = new Date()
+                const day = now.getDay() // 0 (Sun) - 6 (Sat)
+                const diffToMonday = (day + 6) % 7
+                const s = new Date(now)
+                s.setDate(now.getDate() - diffToMonday)
+                s.setHours(0,0,0,0)
+                const e = new Date(s)
+                e.setDate(s.getDate() + 6)
+                e.setHours(23,59,59,999)
+                setStartDate(s.toISOString().split('T')[0])
+                setEndDate(e.toISOString().split('T')[0])
+              }}
+              className="px-3 py-2 bg-indigo-50 text-indigo-700 rounded-xl border border-indigo-100 hover:bg-indigo-100"
+            >Tuần này</button>
+
+            <button
+              onClick={() => {
+                // This month (local)
+                const now = new Date()
+                const s = new Date(now.getFullYear(), now.getMonth(), 1)
+                s.setHours(0,0,0,0)
+                const e = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+                e.setHours(23,59,59,999)
+                setStartDate(s.toISOString().split('T')[0])
+                setEndDate(e.toISOString().split('T')[0])
+              }}
+              className="px-3 py-2 bg-indigo-50 text-indigo-700 rounded-xl border border-indigo-100 hover:bg-indigo-100"
+            >Tháng này</button>
+
+            <button
+              onClick={() => {
+                // This year (local)
+                const now = new Date()
+                const s = new Date(now.getFullYear(), 0, 1)
+                s.setHours(0,0,0,0)
+                const e = new Date(now.getFullYear(), 11, 31)
+                e.setHours(23,59,59,999)
+                setStartDate(s.toISOString().split('T')[0])
+                setEndDate(e.toISOString().split('T')[0])
+              }}
+              className="px-3 py-2 bg-indigo-50 text-indigo-700 rounded-xl border border-indigo-100 hover:bg-indigo-100"
+            >Năm nay</button>
           </div>
+
           <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Đến ngày</label>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Từ ngày</label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Đến ngày</label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
           </div>
-          <button
-            onClick={clearFilters}
-            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50"
-          >
-            Xóa bộ lọc
-          </button>
+
+          <div className="flex items-center gap-2">
+            <div className="ml-2">
+              <label className="block text-sm text-gray-600">Nhóm theo</label>
+              <select
+                value={groupBy}
+                onChange={(e) => setGroupBy(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-xl"
+              >
+                <option value="day">Ngày</option>
+                <option value="week">Tuần</option>
+                <option value="month">Tháng</option>
+                <option value="year">Năm</option>
+              </select>
+            </div>
+            <button
+              onClick={clearFilters}
+              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50"
+            >
+              Xóa bộ lọc
+            </button>
+          </div>
         </div>
       </div>
 
@@ -211,6 +317,41 @@ export default function Reports(){
 
       {/* Charts and Tables */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Time series chart */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Doanh thu theo thời gian</h3>
+          {(!reportData || !reportData.series || reportData.series.length === 0) ? (
+            <div className="text-center py-8 text-gray-500">
+              <i className="fas fa-chart-line text-4xl mb-2"/>
+              <p>Chưa có dữ liệu để hiển thị biểu đồ</p>
+            </div>
+          ) : (
+            <div>
+              <Line
+                data={{
+                  labels: reportData.series.map(s => s.period),
+                  datasets: [{
+                    label: 'Doanh thu',
+                    data: reportData.series.map(s => s.revenue),
+                    borderColor: 'rgba(99,102,241,1)',
+                    backgroundColor: 'rgba(99,102,241,0.08)',
+                    fill: true,
+                  }]
+                }}
+                options={{
+                  responsive: true,
+                  plugins: {
+                    legend: { position: 'top' },
+                    title: { display: false }
+                  },
+                  scales: {
+                    y: { beginAtZero: true }
+                  }
+                }}
+              />
+            </div>
+          )}
+        </div>
         {/* Product Revenue */}
         <div className="bg-white border border-gray-200 rounded-2xl p-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Doanh thu theo sản phẩm</h3>

@@ -20,7 +20,7 @@ def get_admin_token():
     
     # Try common admin credentials
     credentials = [
-        {"username": "admin@example.com", "password": "admin123"},
+        {"username": "admintest03@gmail.com", "password": "@2331540046"},
         {"username": "admin@admin.com", "password": "admin123"},
         {"username": "admin", "password": "admin123"},
     ]
